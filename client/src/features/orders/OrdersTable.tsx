@@ -1,6 +1,10 @@
 ﻿import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
+import {
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
+} from "@tanstack/react-table";
 import type { ColumnDef } from "@tanstack/react-table";
 import { MoreHorizontal, RefreshCw } from "lucide-react";
 import type { Order, OrdersResponse, OrderStatus } from "../../lib/types";
@@ -22,10 +26,28 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../../components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../../components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../../components/ui/table";
 
-const statusOptions: OrderStatus[] = ["PENDING", "PROCESSING", "COMPLETED", "CANCELED"];
+const statusOptions: OrderStatus[] = [
+  "PENDING",
+  "PROCESSING",
+  "COMPLETED",
+  "CANCELED",
+];
 
 function statusVariant(status: OrderStatus) {
   switch (status) {
@@ -84,7 +106,11 @@ export function OrdersTable() {
       new_service_id: number;
       link: string;
       qty: number;
-    }) => apiFetch("/api/orders/resubmit", { method: "POST", body: JSON.stringify(payload) }),
+    }) =>
+      apiFetch("/api/orders/resubmit", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["orders"] }),
   });
 
@@ -93,7 +119,9 @@ export function OrdersTable() {
       {
         header: "ID",
         accessorKey: "id",
-        cell: ({ row }) => <span className="font-mono text-xs">#{row.original.id}</span>,
+        cell: ({ row }) => (
+          <span className="font-mono text-xs">#{row.original.id}</span>
+        ),
       },
       {
         header: "Date",
@@ -107,7 +135,9 @@ export function OrdersTable() {
       {
         header: "Service",
         accessorKey: "service_name",
-        cell: ({ row }) => <span className="font-medium">{row.original.service_name}</span>,
+        cell: ({ row }) => (
+          <span className="font-medium">{row.original.service_name}</span>
+        ),
       },
       {
         header: "Link",
@@ -126,13 +156,17 @@ export function OrdersTable() {
       {
         header: "Qty",
         accessorKey: "quantity",
-        cell: ({ row }) => <span className="font-mono">{row.original.quantity}</span>,
+        cell: ({ row }) => (
+          <span className="font-mono">{row.original.quantity}</span>
+        ),
       },
       {
         header: "Status",
         accessorKey: "status",
         cell: ({ row }) => (
-          <Badge variant={statusVariant(row.original.status)}>{row.original.status}</Badge>
+          <Badge variant={statusVariant(row.original.status)}>
+            {row.original.status}
+          </Badge>
         ),
       },
       {
@@ -155,16 +189,21 @@ export function OrdersTable() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setRefillTarget(row.original)}>Refill</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setResubmitTarget(row.original)}>Resubmit</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setRefillTarget(row.original)}>
+                Refill
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setResubmitTarget(row.original)}>
+                Resubmit
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         ),
       },
     ],
-    []
+    [],
   );
 
+  // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
     data: ordersQuery.data?.data ?? [],
     columns,
@@ -180,7 +219,13 @@ export function OrdersTable() {
           <Input
             placeholder="Search order ID or link"
             value={query.search}
-            onChange={(event) => setQuery((prev) => ({ ...prev, page: 1, search: event.target.value }))}
+            onChange={(event) =>
+              setQuery((prev) => ({
+                ...prev,
+                page: 1,
+                search: event.target.value,
+              }))
+            }
           />
         </div>
         <Select
@@ -223,7 +268,10 @@ export function OrdersTable() {
                 <TableHead key={header.id}>
                   {header.isPlaceholder
                     ? null
-                    : flexRender(header.column.columnDef.header, header.getContext())}
+                    : flexRender(
+                        header.column.columnDef.header,
+                        header.getContext(),
+                      )}
                 </TableHead>
               ))}
             </TableRow>
@@ -257,7 +305,12 @@ export function OrdersTable() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setQuery((prev) => ({ ...prev, page: Math.max(prev.page - 1, 1) }))}
+            onClick={() =>
+              setQuery((prev) => ({
+                ...prev,
+                page: Math.max(prev.page - 1, 1),
+              }))
+            }
             disabled={query.page === 1}
           >
             Prev
@@ -268,7 +321,10 @@ export function OrdersTable() {
             onClick={() =>
               setQuery((prev) => ({
                 ...prev,
-                page: Math.min(prev.page + 1, table.getPageCount() || prev.page + 1),
+                page: Math.min(
+                  prev.page + 1,
+                  table.getPageCount() || prev.page + 1,
+                ),
               }))
             }
             disabled={query.page >= (table.getPageCount() || 1)}
@@ -283,7 +339,8 @@ export function OrdersTable() {
           <DialogHeader>
             <DialogTitle>Refill Order</DialogTitle>
             <DialogDescription>
-              Confirm refill for order #{refillTarget?.id}. Start count: {refillTarget?.start_count}
+              Confirm refill for order #{refillTarget?.id}. Start count:{" "}
+              {refillTarget?.start_count}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -315,14 +372,21 @@ export function OrdersTable() {
           <DialogHeader>
             <DialogTitle>Resubmit Order</DialogTitle>
             <DialogDescription>
-              Update service mapping and resubmit this order to a new provider service.
+              Update service mapping and resubmit this order to a new provider
+              service.
             </DialogDescription>
           </DialogHeader>
-            <div className="space-y-3">
+          <div className="space-y-3">
             <div className="rounded-md border border-slate-800/60 bg-slate-900/40 p-3 text-sm light:border-slate-200 light:bg-slate-100">
-              <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Current</p>
-              <p className="mt-2 text-slate-200 light:text-slate-700">{resubmitTarget?.link}</p>
-              <p className="mt-1 text-sm text-slate-400">Qty: {resubmitTarget?.quantity}</p>
+              <p className="text-xs uppercase tracking-[0.3em] text-slate-500">
+                Current
+              </p>
+              <p className="mt-2 text-slate-200 light:text-slate-700">
+                {resubmitTarget?.link}
+              </p>
+              <p className="mt-1 text-sm text-slate-400">
+                Qty: {resubmitTarget?.quantity}
+              </p>
             </div>
             <Input
               placeholder="New Service ID"

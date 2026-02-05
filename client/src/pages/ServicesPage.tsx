@@ -20,7 +20,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../components/ui/dropdown-menu";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../components/ui/table";
 import { MoreHorizontal, Plus } from "lucide-react";
 
 const emptyDraft: ServiceDraft = {
@@ -81,8 +88,14 @@ export function ServicesPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["services"] }),
   });
 
-  const services = servicesQuery.data ?? [];
-  const backupOptions = useMemo(() => services.map((service) => service.id), [services]);
+  const services = useMemo(
+    () => servicesQuery.data ?? [],
+    [servicesQuery.data],
+  );
+  const backupOptions = useMemo(
+    () => services.map((service) => service.id),
+    [services],
+  );
 
   function openCreate() {
     setMode("create");
@@ -136,7 +149,9 @@ export function ServicesPage() {
               <TableCell className="text-sm text-slate-400 light:text-slate-600">
                 {service.provider_code ?? "-"}
               </TableCell>
-              <TableCell className="font-mono">{Number(service.price ?? 0).toFixed(2)}</TableCell>
+              <TableCell className="font-mono">
+                {Number(service.price ?? 0).toFixed(2)}
+              </TableCell>
               <TableCell>
                 <Switch
                   checked={!!service.is_active}
@@ -153,9 +168,15 @@ export function ServicesPage() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => setDetailsTarget(service)}>View Details</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => openEdit(service)}>Edit</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => openDuplicate(service)}>Duplicate</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setDetailsTarget(service)}>
+                      View Details
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => openEdit(service)}>
+                      Edit
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => openDuplicate(service)}>
+                      Duplicate
+                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </TableCell>
@@ -189,19 +210,31 @@ export function ServicesPage() {
               placeholder="Service ID"
               type="number"
               value={draft.id}
-              onChange={(event) => setDraft((prev) => ({ ...prev, id: Number(event.target.value) }))}
+              onChange={(event) =>
+                setDraft((prev) => ({
+                  ...prev,
+                  id: Number(event.target.value),
+                }))
+              }
               disabled={mode === "edit"}
             />
             <Input
               placeholder="Service Name"
               value={draft.name}
-              onChange={(event) => setDraft((prev) => ({ ...prev, name: event.target.value }))}
+              onChange={(event) =>
+                setDraft((prev) => ({ ...prev, name: event.target.value }))
+              }
             />
             <div className="grid grid-cols-2 gap-3">
               <Input
                 placeholder="Provider Code"
                 value={draft.provider_code}
-                onChange={(event) => setDraft((prev) => ({ ...prev, provider_code: event.target.value }))}
+                onChange={(event) =>
+                  setDraft((prev) => ({
+                    ...prev,
+                    provider_code: event.target.value,
+                  }))
+                }
               />
               <Input
                 placeholder="Provider Service ID"
@@ -210,7 +243,9 @@ export function ServicesPage() {
                 onChange={(event) =>
                   setDraft((prev) => ({
                     ...prev,
-                    provider_service_id: event.target.value ? Number(event.target.value) : null,
+                    provider_service_id: event.target.value
+                      ? Number(event.target.value)
+                      : null,
                   }))
                 }
               />
@@ -224,7 +259,9 @@ export function ServicesPage() {
                 onChange={(event) =>
                   setDraft((prev) => ({
                     ...prev,
-                    cost_price: event.target.value ? Number(event.target.value) : null,
+                    cost_price: event.target.value
+                      ? Number(event.target.value)
+                      : null,
                   }))
                 }
               />
@@ -233,7 +270,12 @@ export function ServicesPage() {
                 type="number"
                 step="0.01"
                 value={draft.price}
-                onChange={(event) => setDraft((prev) => ({ ...prev, price: Number(event.target.value) }))}
+                onChange={(event) =>
+                  setDraft((prev) => ({
+                    ...prev,
+                    price: Number(event.target.value),
+                  }))
+                }
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -244,7 +286,9 @@ export function ServicesPage() {
                 onChange={(event) =>
                   setDraft((prev) => ({
                     ...prev,
-                    min_qty: event.target.value ? Number(event.target.value) : null,
+                    min_qty: event.target.value
+                      ? Number(event.target.value)
+                      : null,
                   }))
                 }
               />
@@ -255,7 +299,9 @@ export function ServicesPage() {
                 onChange={(event) =>
                   setDraft((prev) => ({
                     ...prev,
-                    max_qty: event.target.value ? Number(event.target.value) : null,
+                    max_qty: event.target.value
+                      ? Number(event.target.value)
+                      : null,
                   }))
                 }
               />
@@ -267,7 +313,9 @@ export function ServicesPage() {
               onChange={(event) =>
                 setDraft((prev) => ({
                   ...prev,
-                  backup_service_id: event.target.value ? Number(event.target.value) : null,
+                  backup_service_id: event.target.value
+                    ? Number(event.target.value)
+                    : null,
                 }))
               }
               list="backup-services"
@@ -284,13 +332,20 @@ export function ServicesPage() {
                   ? draft.price_tiers
                   : JSON.stringify(draft.price_tiers ?? [], null, 2)
               }
-              onChange={(event) => setDraft((prev) => ({ ...prev, price_tiers: event.target.value }))}
+              onChange={(event) =>
+                setDraft((prev) => ({
+                  ...prev,
+                  price_tiers: event.target.value,
+                }))
+              }
             />
             <div className="flex items-center justify-between rounded-md border border-slate-800/60 px-3 py-2 text-sm light:border-slate-200">
               <span>Active</span>
               <Switch
                 checked={draft.is_active}
-                onCheckedChange={(value) => setDraft((prev) => ({ ...prev, is_active: value }))}
+                onCheckedChange={(value) =>
+                  setDraft((prev) => ({ ...prev, is_active: value }))
+                }
               />
             </div>
           </div>
@@ -303,7 +358,7 @@ export function ServicesPage() {
               onClick={() => {
                 const payload = {
                   ...draft,
-                  provider_code: draft.provider_code || null,
+                  provider_code: draft.provider_code,
                   price_tiers: parsePriceTiers(draft.price_tiers),
                 };
                 if (mode === "edit") {
@@ -320,7 +375,10 @@ export function ServicesPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={!!detailsTarget} onOpenChange={() => setDetailsTarget(null)}>
+      <Dialog
+        open={!!detailsTarget}
+        onOpenChange={() => setDetailsTarget(null)}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Service Details</DialogTitle>
@@ -330,12 +388,24 @@ export function ServicesPage() {
           </DialogHeader>
           <div className="space-y-2 text-sm">
             <DetailRow label="Name" value={detailsTarget?.name} />
-            <DetailRow label="Provider Code" value={detailsTarget?.provider_code ?? "-"} />
-            <DetailRow label="Provider Service ID" value={detailsTarget?.provider_service_id ?? "-"} />
-            <DetailRow label="Backup Service" value={detailsTarget?.backup_service_id ?? "-"} />
+            <DetailRow
+              label="Provider Code"
+              value={detailsTarget?.provider_code ?? "-"}
+            />
+            <DetailRow
+              label="Provider Service ID"
+              value={detailsTarget?.provider_service_id ?? "-"}
+            />
+            <DetailRow
+              label="Backup Service"
+              value={detailsTarget?.backup_service_id ?? "-"}
+            />
             <DetailRow label="Min Qty" value={detailsTarget?.min_qty ?? "-"} />
             <DetailRow label="Max Qty" value={detailsTarget?.max_qty ?? "-"} />
-            <DetailRow label="Cost Price" value={detailsTarget?.cost_price ?? "-"} />
+            <DetailRow
+              label="Cost Price"
+              value={detailsTarget?.cost_price ?? "-"}
+            />
             <DetailRow label="Price" value={detailsTarget?.price ?? "-"} />
             <DetailRow
               label="Price Tiers"
@@ -355,11 +425,19 @@ export function ServicesPage() {
   );
 }
 
-function DetailRow({ label, value }: { label: string; value?: string | number | null }) {
+function DetailRow({
+  label,
+  value,
+}: {
+  label: string;
+  value?: string | number | null;
+}) {
   return (
     <div className="flex items-center justify-between border-b border-slate-800/40 pb-2 light:border-slate-200">
       <span className="text-slate-400 light:text-slate-600">{label}</span>
-      <span className="font-mono text-xs text-slate-200 light:text-slate-800">{value ?? "-"}</span>
+      <span className="font-mono text-xs text-slate-200 light:text-slate-800">
+        {value ?? "-"}
+      </span>
     </div>
   );
 }

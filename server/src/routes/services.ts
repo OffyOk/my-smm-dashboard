@@ -13,14 +13,14 @@ servicesRoutes.get("/", async (c) => {
       id: services.id,
       name: services.name,
       price: services.price,
-      is_active: services.is_active,
-      provider_code: services.provider_code,
-      provider_service_id: services.provider_service_id,
-      backup_service_id: services.backup_service_id,
-      min_qty: services.min_qty,
-      max_qty: services.max_qty,
-      cost_price: services.cost_price,
-      price_tiers: services.price_tiers,
+      is_active: services.isActive,
+      provider_code: services.providerCode,
+      provider_service_id: services.providerServiceId,
+      backup_service_id: services.backupServiceId,
+      min_qty: services.minQty,
+      max_qty: services.maxQty,
+      cost_price: services.costPrice,
+      price_tiers: services.priceTiers,
     })
     .from(services)
     .orderBy(services.id);
@@ -54,15 +54,15 @@ servicesRoutes.post("/", zValidator("json", createSchema), async (c) => {
   await db.insert(services).values({
     id: payload.id,
     name: payload.name,
-    provider_code: payload.provider_code ?? null,
-    provider_service_id: payload.provider_service_id ?? 0,
-    cost_price: payload.cost_price?.toFixed(4) ?? "0",
+    providerCode: payload.provider_code ?? null,
+    providerServiceId: payload.provider_service_id ?? 0,
+    costPrice: payload.cost_price?.toFixed(4) ?? "0",
     price: payload.price.toFixed(2),
-    price_tiers: payload.price_tiers ?? [],
-    min_qty: payload.min_qty ?? 100,
-    max_qty: payload.max_qty ?? 10000,
-    is_active: payload.is_active ?? true,
-    backup_service_id: payload.backup_service_id ?? null,
+    priceTiers: payload.price_tiers ?? [],
+    minQty: payload.min_qty ?? 100,
+    maxQty: payload.max_qty ?? 10000,
+    isActive: payload.is_active ?? true,
+    backupServiceId: payload.backup_service_id ?? null,
   });
 
   return c.json({ success: true });
@@ -90,19 +90,19 @@ servicesRoutes.patch("/:id", zValidator("json", patchSchema), async (c) => {
     .set({
       ...(payload.name !== undefined ? { name: payload.name } : {}),
       ...(payload.price !== undefined ? { price: payload.price.toFixed(2) } : {}),
-      ...(payload.is_active !== undefined ? { is_active: payload.is_active } : {}),
-      ...(payload.provider_code !== undefined ? { provider_code: payload.provider_code } : {}),
+      ...(payload.is_active !== undefined ? { isActive: payload.is_active } : {}),
+      ...(payload.provider_code !== undefined ? { providerCode: payload.provider_code } : {}),
       ...(payload.provider_service_id !== undefined
-        ? { provider_service_id: payload.provider_service_id ?? 0 }
+        ? { providerServiceId: payload.provider_service_id ?? 0 }
         : {}),
       ...(payload.cost_price !== undefined
-        ? { cost_price: payload.cost_price?.toFixed(4) ?? "0" }
+        ? { costPrice: payload.cost_price?.toFixed(4) ?? "0" }
         : {}),
-      ...(payload.price_tiers !== undefined ? { price_tiers: payload.price_tiers } : {}),
-      ...(payload.min_qty !== undefined ? { min_qty: payload.min_qty ?? 100 } : {}),
-      ...(payload.max_qty !== undefined ? { max_qty: payload.max_qty ?? 10000 } : {}),
+      ...(payload.price_tiers !== undefined ? { priceTiers: payload.price_tiers } : {}),
+      ...(payload.min_qty !== undefined ? { minQty: payload.min_qty ?? 100 } : {}),
+      ...(payload.max_qty !== undefined ? { maxQty: payload.max_qty ?? 10000 } : {}),
       ...(payload.backup_service_id !== undefined
-        ? { backup_service_id: payload.backup_service_id }
+        ? { backupServiceId: payload.backup_service_id }
         : {}),
     })
     .where(eq(services.id, id));

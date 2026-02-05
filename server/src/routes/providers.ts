@@ -12,8 +12,8 @@ providersRoutes.get("/", async (c) => {
     .select({
       code: providers.code,
       name: providers.name,
-      api_url: providers.api_url,
-      api_key: providers.api_key,
+      api_url: providers.apiUrl,
+      api_key: providers.apiKey,
     })
     .from(providers)
     .orderBy(providers.code);
@@ -35,8 +35,8 @@ providersRoutes.patch("/:code", zValidator("json", patchSchema), async (c) => {
     .update(providers)
     .set({
       ...(payload.name !== undefined ? { name: payload.name } : {}),
-      ...(payload.api_url !== undefined ? { api_url: payload.api_url } : {}),
-      ...(payload.api_key !== undefined ? { api_key: payload.api_key } : {}),
+      ...(payload.api_url !== undefined ? { apiUrl: payload.api_url } : {}),
+      ...(payload.api_key !== undefined ? { apiKey: payload.api_key } : {}),
     })
     .where(eq(providers.code, code));
 

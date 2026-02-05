@@ -12,7 +12,7 @@ statsRoutes.get("/summary", async (c) => {
   const [totalToday] = await db
     .select({ count: sql<number>`count(*)` })
     .from(orders)
-    .where(gt(orders.created_at, today));
+    .where(gt(orders.createdAt, today));
 
   const [pendingQueue] = await db
     .select({ count: sql<number>`count(*)` })
@@ -25,7 +25,7 @@ statsRoutes.get("/summary", async (c) => {
   const [refillRequests] = await db
     .select({ count: sql<number>`count(*)` })
     .from(orders)
-    .where(and(isNotNull(orders.parent_order_id), gt(orders.created_at, yesterday)));
+    .where(and(isNotNull(orders.parentOrderId), gt(orders.createdAt, yesterday)));
 
   return c.json({
     totalToday: Number(totalToday?.count ?? 0),
@@ -40,12 +40,12 @@ statsRoutes.get("/quality", async (c) => {
       id: services.id,
       name: services.name,
       totalOrders: sql<number>`count(*)`,
-      refillCount: sql<number>`sum(case when ${orders.parent_order_id} is null then 0 else 1 end)`,
-      providerCode: services.provider_code,
+      refillCount: sql<number>`sum(case when ${orders.parentOrderId} is null then 0 else 1 end)`,
+      providerCode: services.providerCode,
     })
     .from(orders)
-    .leftJoin(services, eq(orders.service_id, services.id))
-    .groupBy(services.id, services.name, services.provider_code)
+    .leftJoin(services, eq(orders.serviceId, services.id))
+    .groupBy(services.id, services.name, services.providerCode)
     .having(gt(sql<number>`count(*)`, 5))
     .orderBy(sql`sum(case when ${orders.parent_order_id} is null then 0 else 1 end) desc`)
     .limit(6);

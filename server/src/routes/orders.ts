@@ -40,20 +40,20 @@ ordersRoutes.get("/", zValidator("query", listQuerySchema), async (c) => {
   const data = await db
     .select({
       id: orders.id,
-      created_at: orders.created_at,
+      created_at: orders.createdAt,
       link: orders.link,
       quantity: orders.quantity,
       status: orders.status,
-      provider_order_id: orders.provider_order_id,
-      start_count: orders.start_count,
+      provider_order_id: orders.providerOrderId,
+      start_count: orders.startCount,
       service_name: services.name,
       provider_code: providers.code,
     })
     .from(orders)
-    .leftJoin(services, eq(orders.service_id, services.id))
-    .leftJoin(providers, eq(services.provider_code, providers.code))
+    .leftJoin(services, eq(orders.serviceId, services.id))
+    .leftJoin(providers, eq(services.providerCode, providers.code))
     .where(whereClause)
-    .orderBy(desc(orders.created_at))
+    .orderBy(desc(orders.createdAt))
     .limit(pageSize)
     .offset((page - 1) * pageSize);
 
@@ -72,9 +72,9 @@ ordersRoutes.post("/:id/refill", async (c) => {
       id: orders.id,
       link: orders.link,
       quantity: orders.quantity,
-      service_id: orders.service_id,
-      provider_order_id: orders.provider_order_id,
-      start_count: orders.start_count,
+      service_id: orders.serviceId,
+      provider_order_id: orders.providerOrderId,
+      start_count: orders.startCount,
     })
     .from(orders)
     .where(eq(orders.id, orderId));

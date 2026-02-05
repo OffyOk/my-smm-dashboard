@@ -1,7 +1,12 @@
 ﻿import { useMemo, useState } from "react";
 import { Copy, Calculator, Plus, X } from "lucide-react";
 import { Button } from "../components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../components/ui/card";
 import { Input } from "../components/ui/input";
 
 const igRates = {
@@ -252,7 +257,11 @@ function interpolate(rateSet: Record<number, RateItem>, quantity: number) {
 
   if (rateSet[quantity]) {
     const exact = normalizeRate(rateSet[quantity]);
-    return { price: exact.price, free: exact.free, note: `ราคาอ้างอิง ${quantity}` };
+    return {
+      price: exact.price,
+      free: exact.free,
+      note: `ราคาอ้างอิง ${quantity}`,
+    };
   }
 
   const firstQty = quantities[0];
@@ -296,7 +305,8 @@ function interpolate(rateSet: Record<number, RateItem>, quantity: number) {
 
 function getRateSet(platform: string, service: string) {
   if (platform === "ig") return igRates[service as keyof typeof igRates];
-  if (platform === "tiktok") return tiktokRates[service as keyof typeof tiktokRates];
+  if (platform === "tiktok")
+    return tiktokRates[service as keyof typeof tiktokRates];
   if (platform === "facebookProfile") return fbRates.profile;
   if (platform === "facebookPage") return fbRates.page;
   if (platform === "youtube") return youtubeRates.followers;
@@ -312,7 +322,7 @@ function getServiceLabel(value: string, platform: string) {
   return services.find((s) => s.value === value)?.label ?? value;
 }
 
-function buildServiceLine(item: LineItem, price: number, free: number) {
+function buildServiceLine(item: LineItem, _price: number, free: number) {
   const label = getServiceLabel(item.service, item.platform);
   return free > 0
     ? `- ${label} ${item.quantity} + ${free}`
@@ -335,11 +345,18 @@ export function PricingCalculatorPage() {
   const totals = useMemo(() => {
     const total = computed.reduce((sum, item) => sum + item.price, 0);
     const youtubeFollowers = computed.some(
-      (item) => item.platform === "youtube" && item.service === "followers" && item.quantity > 0
+      (item) =>
+        item.platform === "youtube" &&
+        item.service === "followers" &&
+        item.quantity > 0,
     );
-    const hasFollowers = computed.some((item) => item.service === "followers" && item.quantity > 0);
+    const hasFollowers = computed.some(
+      (item) => item.service === "followers" && item.quantity > 0,
+    );
     const hasLikesOrViews = computed.some(
-      (item) => (item.service === "likes" || item.service === "views") && item.quantity > 0
+      (item) =>
+        (item.service === "likes" || item.service === "views") &&
+        item.quantity > 0,
     );
     return { total, youtubeFollowers, hasFollowers, hasLikesOrViews };
   }, [computed]);
@@ -387,7 +404,9 @@ export function PricingCalculatorPage() {
   }
 
   function updateItem(index: number, patch: Partial<LineItem>) {
-    setItems((prev) => prev.map((item, i) => (i === index ? { ...item, ...patch } : item)));
+    setItems((prev) =>
+      prev.map((item, i) => (i === index ? { ...item, ...patch } : item)),
+    );
   }
 
   function addItem() {
@@ -432,7 +451,11 @@ export function PricingCalculatorPage() {
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-sm font-semibold">บริการ {index + 1}</p>
                     {items.length > 1 && (
-                      <Button variant="ghost" size="icon" onClick={() => removeItem(index)}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeItem(index)}
+                      >
                         <X className="h-4 w-4" />
                       </Button>
                     )}
@@ -441,13 +464,19 @@ export function PricingCalculatorPage() {
                     {platforms.map((platformItem) => (
                       <Button
                         key={platformItem.value}
-                        variant={item.platform === platformItem.value ? "subtle" : "outline"}
+                        variant={
+                          item.platform === platformItem.value
+                            ? "subtle"
+                            : "outline"
+                        }
                         onClick={() =>
                           updateItem(index, {
                             platform: platformItem.value,
-                            service: platformItem.value.startsWith("facebook") || platformItem.value === "youtube"
-                              ? "followers"
-                              : item.service,
+                            service:
+                              platformItem.value.startsWith("facebook") ||
+                              platformItem.value === "youtube"
+                                ? "followers"
+                                : item.service,
                           })
                         }
                       >
@@ -460,10 +489,17 @@ export function PricingCalculatorPage() {
                     {services.map((serviceItem) => (
                       <Button
                         key={serviceItem.value}
-                        variant={item.service === serviceItem.value ? "subtle" : "outline"}
-                        onClick={() => updateItem(index, { service: serviceItem.value })}
+                        variant={
+                          item.service === serviceItem.value
+                            ? "subtle"
+                            : "outline"
+                        }
+                        onClick={() =>
+                          updateItem(index, { service: serviceItem.value })
+                        }
                         disabled={
-                          item.platform.startsWith("facebook") || item.platform === "youtube"
+                          item.platform.startsWith("facebook") ||
+                          item.platform === "youtube"
                             ? serviceItem.value !== "followers"
                             : false
                         }
@@ -479,16 +515,22 @@ export function PricingCalculatorPage() {
                       placeholder="จำนวน"
                       value={item.quantity}
                       onChange={(event) =>
-                        updateItem(index, { quantity: Number(event.target.value) })
+                        updateItem(index, {
+                          quantity: Number(event.target.value),
+                        })
                       }
                     />
                     <Input
                       placeholder="ลิงก์ (optional)"
                       value={item.link}
-                      onChange={(event) => updateItem(index, { link: event.target.value })}
+                      onChange={(event) =>
+                        updateItem(index, { link: event.target.value })
+                      }
                     />
                   </div>
-                  <p className="text-xs text-slate-500">Platform: {platformLabel}</p>
+                  <p className="text-xs text-slate-500">
+                    Platform: {platformLabel}
+                  </p>
                 </div>
               );
             })}
@@ -509,7 +551,9 @@ export function PricingCalculatorPage() {
               <p className="font-mono text-lg text-slate-100 light:text-slate-900">
                 {totals.total} บาท
               </p>
-              <p className="text-xs text-slate-400">รวม {items.length} บริการ</p>
+              <p className="text-xs text-slate-400">
+                รวม {items.length} บริการ
+              </p>
             </div>
             <Card className="border border-slate-800/60 light:border-slate-200">
               <CardContent className="pt-4">

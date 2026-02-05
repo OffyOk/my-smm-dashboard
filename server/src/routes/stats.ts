@@ -12,7 +12,7 @@ statsRoutes.get("/summary", async (c) => {
   const [totalToday] = await db
     .select({ count: sql<number>`count(*)` })
     .from(orders)
-    .where(gt(orders.createdAt, today));
+  // .where(gt(orders.createdAt, today));
 
   const [pendingQueue] = await db
     .select({ count: sql<number>`count(*)` })
@@ -25,7 +25,7 @@ statsRoutes.get("/summary", async (c) => {
   const [refillRequests] = await db
     .select({ count: sql<number>`count(*)` })
     .from(orders)
-    .where(and(isNotNull(orders.parentOrderId), gt(orders.createdAt, yesterday)));
+  // .where(and(isNotNull(orders.parentOrderId), gt(orders.createdAt, yesterday)));
 
   return c.json({
     totalToday: Number(totalToday?.count ?? 0),
@@ -47,7 +47,7 @@ statsRoutes.get("/quality", async (c) => {
     .leftJoin(services, eq(orders.serviceId, services.id))
     .groupBy(services.id, services.name, services.providerCode)
     .having(gt(sql<number>`count(*)`, 5))
-    .orderBy(sql`sum(case when ${orders.parent_order_id} is null then 0 else 1 end) desc`)
+    // .orderBy(sql`sum(case when ${orders.parent_order_id} is null then 0 else 1 end) desc`)
     .limit(6);
 
   const mapped = data

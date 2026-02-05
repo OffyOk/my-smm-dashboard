@@ -1,14 +1,15 @@
-﻿import { createContext, useContext, useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
+import { ThemeContext } from "./use-theme";
+import type { Theme } from "./use-theme";
+// type Theme = "dark" | "light";
 
-type Theme = "dark" | "light";
+// type ThemeContextValue = {
+//   theme: Theme;
+//   setTheme: (theme: Theme) => void;
+//   toggle: () => void;
+// };
 
-type ThemeContextValue = {
-  theme: Theme;
-  setTheme: (theme: Theme) => void;
-  toggle: () => void;
-};
-
-const ThemeContext = createContext<ThemeContextValue | null>(null);
+// const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(() => {
@@ -26,18 +27,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     () => ({
       theme,
       setTheme: setThemeState,
-      toggle: () => setThemeState((prev) => (prev === "dark" ? "light" : "dark")),
+      toggle: () =>
+        setThemeState((prev) => (prev === "dark" ? "light" : "dark")),
     }),
-    [theme]
+    [theme],
   );
 
-  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
-}
-
-export function useTheme() {
-  const ctx = useContext(ThemeContext);
-  if (!ctx) {
-    throw new Error("useTheme must be used within ThemeProvider");
-  }
-  return ctx;
+  return (
+    <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
+  );
 }

@@ -11,8 +11,6 @@ node_modules
 dist
 dist-ssr
 *.local
-.env
-.env.*
 client/.env
 server/.env
 
@@ -27,4 +25,3 @@ server/.env
 *.sln
 *.sw?
 
-/.env

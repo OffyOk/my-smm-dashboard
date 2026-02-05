@@ -30,7 +30,55 @@ export function ProvidersPage() {
         </p>
       </div>
 
-      <Table>
+      <div className="space-y-3 sm:hidden">
+        {(providersQuery.data ?? []).map((provider) => (
+          <div
+            key={provider.code}
+            className="rounded-lg border border-slate-800/60 bg-slate-950/40 p-4 text-sm light:border-slate-200 light:bg-white"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs text-slate-500">Code</p>
+                <p className="font-mono text-base">{provider.code}</p>
+              </div>
+              <Button size="sm" variant="subtle" onClick={() => updateMutation.mutate(provider)}>
+                Save
+              </Button>
+            </div>
+            <div className="mt-3 space-y-2">
+              <Input
+                defaultValue={provider.name ?? ""}
+                onBlur={(event) =>
+                  updateMutation.mutate({ ...provider, name: event.currentTarget.value })
+                }
+                placeholder="Provider Name"
+              />
+              <Input
+                defaultValue={provider.api_url}
+                onBlur={(event) =>
+                  updateMutation.mutate({ ...provider, api_url: event.currentTarget.value })
+                }
+                placeholder="API URL"
+              />
+              <Input
+                defaultValue={provider.api_key}
+                onBlur={(event) =>
+                  updateMutation.mutate({ ...provider, api_key: event.currentTarget.value })
+                }
+                placeholder="API Key"
+              />
+            </div>
+          </div>
+        ))}
+        {!providersQuery.data?.length && (
+          <div className="rounded-lg border border-slate-800/60 p-4 text-center text-slate-400 light:border-slate-200">
+            No providers configured.
+          </div>
+        )}
+      </div>
+
+      <div className="hidden sm:block">
+        <Table>
         <TableHeader>
           <TableRow>
             <TableHead>Code</TableHead>
@@ -52,7 +100,8 @@ export function ProvidersPage() {
             </TableRow>
           )}
         </TableBody>
-      </Table>
+        </Table>
+      </div>
     </div>
   );
 }

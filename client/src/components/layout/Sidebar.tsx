@@ -4,6 +4,8 @@ import {
   Bot,
   LayoutDashboard,
   ListOrdered,
+  MessageCircle,
+  Calculator,
   PlugZap,
   Settings2,
 } from "lucide-react";
@@ -12,6 +14,8 @@ import { cn } from "../../lib/utils";
 const navItems = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
   { to: "/orders", label: "Order Manager", icon: ListOrdered },
+  { to: "/messages", label: "Quick Messages", icon: MessageCircle },
+  { to: "/pricing", label: "Pricing Calculator", icon: Calculator },
   { to: "/services", label: "Services", icon: Settings2 },
   { to: "/providers", label: "Providers", icon: PlugZap },
 ];

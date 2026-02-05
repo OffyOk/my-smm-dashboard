@@ -20,6 +20,25 @@ export async function apiFetch<T>(path: string, options: FetchOptions = {}) {
     if (path.startsWith("/api/stats/quality")) {
       return getMockQuality() as T;
     }
+    if (path.startsWith("/api/orders/bulk")) {
+      const count = Array.isArray(options.body)
+        ? options.body.length
+        : (() => {
+            try {
+              const parsed = JSON.parse(String(options.body ?? "{}"));
+              return Array.isArray(parsed.orders) ? parsed.orders.length : 1;
+            } catch {
+              return 1;
+            }
+          })();
+      return {
+        message: "OK",
+        created_ids: Array.from({ length: count }).map((_, i) => 2000 + i),
+      } as T;
+    }
+    if (path.startsWith("/api/orders/refill-bulk")) {
+      return { message: "OK" } as T;
+    }
     if (path.startsWith("/api/orders")) {
       return getMockOrders({
         page: Number(options.query?.page ?? 1),

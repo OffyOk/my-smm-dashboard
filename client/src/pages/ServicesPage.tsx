@@ -130,7 +130,58 @@ export function ServicesPage() {
         </Button>
       </div>
 
-      <Table>
+      <div className="space-y-3 sm:hidden">
+        {services.map((service) => (
+          <div
+            key={service.id}
+            className="rounded-lg border border-slate-800/60 bg-slate-950/40 p-4 text-sm light:border-slate-200 light:bg-white"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="font-mono text-xs text-slate-400">#{service.id}</p>
+                <p className="text-base font-semibold">{service.name}</p>
+                <p className="text-xs text-slate-500">
+                  {service.provider_code ?? "-"}
+                </p>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => setDetailsTarget(service)}>
+                Details
+              </Button>
+            </div>
+            <div className="mt-3 flex items-center justify-between">
+              <span className="text-xs text-slate-500">Price</span>
+              <span className="font-mono">
+                {Number(service.price ?? 0).toFixed(2)}
+              </span>
+            </div>
+            <div className="mt-3 flex items-center justify-between">
+              <span className="text-xs text-slate-500">Active</span>
+              <Switch
+                checked={!!service.is_active}
+                onCheckedChange={(value) =>
+                  updateMutation.mutate({ id: service.id, is_active: value })
+                }
+              />
+            </div>
+            <div className="mt-4 flex gap-2">
+              <Button size="sm" variant="outline" onClick={() => openEdit(service)}>
+                Edit
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => openDuplicate(service)}>
+                Duplicate
+              </Button>
+            </div>
+          </div>
+        ))}
+        {!services.length && (
+          <div className="rounded-lg border border-slate-800/60 p-4 text-center text-slate-400 light:border-slate-200">
+            No services found.
+          </div>
+        )}
+      </div>
+
+      <div className="hidden sm:block">
+        <Table>
         <TableHeader>
           <TableRow>
             <TableHead>ID</TableHead>
@@ -190,7 +241,8 @@ export function ServicesPage() {
             </TableRow>
           )}
         </TableBody>
-      </Table>
+        </Table>
+      </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>

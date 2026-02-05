@@ -65,8 +65,15 @@ ordersRoutes.get("/", zValidator("query", listQuerySchema), async (c) => {
   });
 });
 
-ordersRoutes.post("/:id/refill", async (c) => {
+const refillSchema = z
+  .object({
+    current_count: z.number().optional(),
+  })
+  .optional();
+
+ordersRoutes.post("/:id/refill", zValidator("json", refillSchema), async (c) => {
   const orderId = Number(c.req.param("id"));
+  const payload = c.req.valid("json") ?? {};
   const [order] = await db
     .select({
       id: orders.id,
@@ -98,6 +105,7 @@ ordersRoutes.post("/:id/refill", async (c) => {
       quantity: order.quantity,
       provider_order_id: order.provider_order_id,
       start_count: order.start_count,
+      current_count: payload.current_count ?? order.start_count,
     }),
   });
 
@@ -118,15 +126,24 @@ const resubmitSchema = z.object({
 
 ordersRoutes.post("/resubmit", zValidator("json", resubmitSchema), async (c) => {
   const payload = c.req.valid("json");
-  const webhookUrl = process.env.N8N_RESUBMIT_WEBHOOK_URL;
+  const webhookUrl = process.env.N8N_BULK_WEBHOOK_URL;
   if (!webhookUrl) {
-    return c.json({ error: "N8N_RESUBMIT_WEBHOOK_URL not set" }, 500);
+    return c.json({ error: "N8N_BULK_WEBHOOK_URL not set" }, 500);
   }
 
   await fetch(webhookUrl, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
+    body: JSON.stringify({
+      orders: [
+        {
+          service_id: payload.new_service_id,
+          link: payload.link,
+          quantity: payload.qty,
+          remark: `Resubmit from order #${payload.old_order_id}`,
+        },
+      ],
+    }),
   });
 
   await db
@@ -135,4 +152,71 @@ ordersRoutes.post("/resubmit", zValidator("json", resubmitSchema), async (c) => 
     .where(eq(orders.id, payload.old_order_id));
 
   return c.json({ success: true });
+});
+
+const bulkSchema = z.object({
+  orders: z.array(
+    z.object({
+      service_id: z.number(),
+      link: z.string(),
+      quantity: z.number(),
+      start_count: z.number().optional(),
+      custom_price: z.number().nullable().optional(),
+      wait_for_prev: z.boolean().optional(),
+      remark: z.string().optional(),
+    })
+  ),
+});
+
+ordersRoutes.post("/bulk", zValidator("json", bulkSchema), async (c) => {
+  const payload = c.req.valid("json");
+  const webhookUrl = process.env.N8N_BULK_WEBHOOK_URL;
+  if (!webhookUrl) {
+    return c.json({ error: "N8N_BULK_WEBHOOK_URL not set" }, 500);
+  }
+
+  const response = await fetch(webhookUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const message = await response.text();
+    return c.json({ error: message || "n8n bulk webhook failed" }, 500);
+  }
+
+  const result = await response.json();
+  return c.json(result);
+});
+
+const refillBulkSchema = z.object({
+  refills: z.array(
+    z.object({
+      order_id: z.number(),
+      current_count: z.number(),
+    })
+  ),
+});
+
+ordersRoutes.post("/refill-bulk", zValidator("json", refillBulkSchema), async (c) => {
+  const payload = c.req.valid("json");
+  const webhookUrl = process.env.N8N_REFILL_WEBHOOK_URL;
+  if (!webhookUrl) {
+    return c.json({ error: "N8N_REFILL_WEBHOOK_URL not set" }, 500);
+  }
+
+  const response = await fetch(webhookUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const message = await response.text();
+    return c.json({ error: message || "n8n refill webhook failed" }, 500);
+  }
+
+  const result = await response.json();
+  return c.json(result);
 });

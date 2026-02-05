@@ -13,12 +13,6 @@ import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "../../components/ui/dropdown-menu";
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -80,6 +74,8 @@ export function OrdersTable() {
   const [refillTarget, setRefillTarget] = useState<Order | null>(null);
   const [resubmitTarget, setResubmitTarget] = useState<Order | null>(null);
   const [newServiceId, setNewServiceId] = useState("");
+  const [refillCurrentCount, setRefillCurrentCount] = useState("");
+  const [expandedIds, setExpandedIds] = useState<Set<number>>(() => new Set());
 
   const ordersQuery = useQuery({
     queryKey: ["orders", query],
@@ -95,8 +91,11 @@ export function OrdersTable() {
   });
 
   const refillMutation = useMutation({
-    mutationFn: async (orderId: number) =>
-      apiFetch(`/api/orders/${orderId}/refill`, { method: "POST" }),
+    mutationFn: async (payload: { orderId: number; current_count?: number }) =>
+      apiFetch(`/api/orders/${payload.orderId}/refill`, {
+        method: "POST",
+        body: JSON.stringify({ current_count: payload.current_count }),
+      }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["orders"] }),
   });
 
@@ -182,21 +181,14 @@ export function OrdersTable() {
         id: "actions",
         header: "",
         cell: ({ row }) => (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setRefillTarget(row.original)}>
-                Refill
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setResubmitTarget(row.original)}>
-                Resubmit
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <div className="flex items-center justify-end gap-2">
+            <Button size="sm" variant="outline" onClick={() => setRefillTarget(row.original)}>
+              Refill
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => setResubmitTarget(row.original)}>
+              Resubmit
+            </Button>
+          </div>
         ),
       },
     ],
@@ -214,7 +206,7 @@ export function OrdersTable() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="sticky top-0 z-20 -mx-4 flex flex-wrap items-center gap-3 border-b border-slate-800/60 bg-panel-950/90 px-4 py-3 backdrop-blur sm:static sm:mx-0 sm:border-b-0 sm:bg-transparent sm:px-0 sm:py-0 light:border-slate-200 light:bg-white/90">
         <div className="flex min-w-[240px] flex-1 items-center gap-2">
           <Input
             placeholder="Search order ID or link"
@@ -260,7 +252,90 @@ export function OrdersTable() {
         </Button>
       </div>
 
-      <Table>
+      <div className="space-y-3 sm:hidden">
+        {ordersQuery.data?.data.map((order) => {
+          const isExpanded = expandedIds.has(order.id);
+          return (
+          <div
+            key={order.id}
+            className="rounded-lg border border-slate-800/60 bg-slate-950/40 p-4 text-sm light:border-slate-200 light:bg-white"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="font-mono text-xs text-slate-400">#{order.id}</p>
+                <p className="text-base font-semibold">{order.service_name}</p>
+                <p className="mt-1 text-xs text-slate-500">
+                  {new Date(order.created_at).toLocaleString()}
+                </p>
+              </div>
+              <Badge variant={statusVariant(order.status)}>{order.status}</Badge>
+            </div>
+            <div className="mt-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-slate-500">Qty</span>
+                <span className="font-mono">{order.quantity}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-slate-500">Provider</span>
+                <span className="font-mono text-xs">{order.provider_code ?? "-"}</span>
+              </div>
+              {isExpanded && (
+                <div>
+                  <p className="text-xs text-slate-500">Link</p>
+                  <a
+                    href={order.link}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="block truncate text-sky-400"
+                  >
+                    {order.link}
+                  </a>
+                </div>
+              )}
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() =>
+                  setExpandedIds((prev) => {
+                    const next = new Set(prev);
+                    if (next.has(order.id)) {
+                      next.delete(order.id);
+                    } else {
+                      next.add(order.id);
+                    }
+                    return next;
+                  })
+                }
+              >
+                {isExpanded ? "Hide Details" : "View Details"}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => navigator.clipboard.writeText(order.link)}
+              >
+                Copy Link
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setRefillTarget(order)}>
+                Refill
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setResubmitTarget(order)}>
+                Resubmit
+              </Button>
+            </div>
+          </div>
+        )})}
+        {!ordersQuery.data?.data.length && (
+          <div className="rounded-lg border border-slate-800/60 p-4 text-center text-slate-400 light:border-slate-200">
+            No orders found.
+          </div>
+        )}
+      </div>
+
+      <div className="hidden sm:block">
+        <Table>
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id}>
@@ -295,7 +370,8 @@ export function OrdersTable() {
             </TableRow>
           )}
         </TableBody>
-      </Table>
+        </Table>
+      </div>
 
       <div className="flex items-center justify-between">
         <p className="text-sm text-slate-400">
@@ -334,7 +410,13 @@ export function OrdersTable() {
         </div>
       </div>
 
-      <Dialog open={!!refillTarget} onOpenChange={() => setRefillTarget(null)}>
+      <Dialog
+        open={!!refillTarget}
+        onOpenChange={() => {
+          setRefillTarget(null);
+          setRefillCurrentCount("");
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Refill Order</DialogTitle>
@@ -343,6 +425,14 @@ export function OrdersTable() {
               {refillTarget?.start_count}
             </DialogDescription>
           </DialogHeader>
+          <div className="space-y-3">
+            <Input
+              placeholder="Current Count"
+              type="number"
+              value={refillCurrentCount}
+              onChange={(event) => setRefillCurrentCount(event.target.value)}
+            />
+          </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setRefillTarget(null)}>
               Cancel
@@ -350,8 +440,14 @@ export function OrdersTable() {
             <Button
               onClick={() => {
                 if (refillTarget) {
-                  refillMutation.mutate(refillTarget.id);
+                  refillMutation.mutate({
+                    orderId: refillTarget.id,
+                    current_count: refillCurrentCount
+                      ? Number(refillCurrentCount)
+                      : undefined,
+                  });
                   setRefillTarget(null);
+                  setRefillCurrentCount("");
                 }
               }}
             >
@@ -386,6 +482,14 @@ export function OrdersTable() {
               </p>
               <p className="mt-1 text-sm text-slate-400">
                 Qty: {resubmitTarget?.quantity}
+              </p>
+            </div>
+            <div className="rounded-md border border-slate-800/60 bg-slate-900/40 p-3 text-sm light:border-slate-200 light:bg-slate-100">
+              <p className="text-xs uppercase tracking-[0.3em] text-slate-500">
+                Remark
+              </p>
+              <p className="mt-2 text-slate-200 light:text-slate-700">
+                Resubmit from order #{resubmitTarget?.id}
               </p>
             </div>
             <Input

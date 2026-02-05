@@ -6,7 +6,7 @@ import { cn } from "../../lib/utils";
 const Select = SelectPrimitive.Root;
 const SelectValue = SelectPrimitive.Value;
 const SelectTrigger = React.forwardRef<
-  React.ElementRef<typeof SelectPrimitive.Trigger>,
+  React.ComponentRef<typeof SelectPrimitive.Trigger>,
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Trigger>
 >(({ className, children, ...props }, ref) => (
   <SelectPrimitive.Trigger
@@ -14,7 +14,7 @@ const SelectTrigger = React.forwardRef<
     className={cn(
       "flex h-9 w-full items-center justify-between rounded-md border border-slate-800 bg-slate-950/60 px-3 py-2 text-sm text-slate-100 shadow-sm focus:outline-none",
       "light:border-slate-200 light:bg-white light:text-slate-900",
-      className
+      className,
     )}
     {...props}
   >
@@ -27,7 +27,7 @@ const SelectTrigger = React.forwardRef<
 SelectTrigger.displayName = SelectPrimitive.Trigger.displayName;
 
 const SelectContent = React.forwardRef<
-  React.ElementRef<typeof SelectPrimitive.Content>,
+  React.ComponentRef<typeof SelectPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Content>
 >(({ className, children, position = "popper", ...props }, ref) => (
   <SelectPrimitive.Portal>
@@ -36,19 +36,21 @@ const SelectContent = React.forwardRef<
       className={cn(
         "z-50 min-w-[8rem] overflow-hidden rounded-md border border-slate-800 bg-slate-950 text-slate-100 shadow-glow",
         "light:border-slate-200 light:bg-white light:text-slate-900",
-        className
+        className,
       )}
       position={position}
       {...props}
     >
-      <SelectPrimitive.Viewport className="p-1">{children}</SelectPrimitive.Viewport>
+      <SelectPrimitive.Viewport className="p-1">
+        {children}
+      </SelectPrimitive.Viewport>
     </SelectPrimitive.Content>
   </SelectPrimitive.Portal>
 ));
 SelectContent.displayName = SelectPrimitive.Content.displayName;
 
 const SelectItem = React.forwardRef<
-  React.ElementRef<typeof SelectPrimitive.Item>,
+  React.ComponentRef<typeof SelectPrimitive.Item>,
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Item>
 >(({ className, children, ...props }, ref) => (
   <SelectPrimitive.Item
@@ -56,7 +58,7 @@ const SelectItem = React.forwardRef<
     className={cn(
       "relative flex w-full cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none focus:bg-slate-900/60 focus:text-slate-100",
       "light:focus:bg-slate-100",
-      className
+      className,
     )}
     {...props}
   >

@@ -1,0 +1,15 @@
+﻿{
+  "name": "my-smm-dashboard",
+  "private": true,
+  "workspaces": [
+    "client",
+    "server",
+    "shared"
+  ],
+  "scripts": {
+    "dev": "bun --filter smm-dashboard-client dev",
+    "dev:server": "bun --filter server dev",
+    "build": "bun --filter client build",
+    "lint": "bun --filter client lint"
+  }
+}

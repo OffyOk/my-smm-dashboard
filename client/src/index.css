@@ -1,0 +1,29 @@
+﻿@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light dark;
+}
+
+html {
+  font-family: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+}
+
+body {
+  @apply bg-slate-950 text-slate-100 antialiased;
+  margin: 0;
+}
+
+.light body {
+  @apply bg-white text-slate-900;
+}
+
+* {
+  @apply border-slate-800;
+}
+
+.light * {
+  @apply border-slate-200;
+}
+

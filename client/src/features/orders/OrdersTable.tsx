@@ -152,6 +152,15 @@ export function OrdersTable() {
         ),
       },
       {
+        header: "Remark",
+        accessorKey: "remark",
+        cell: ({ row }) => (
+          <span className="font-mono text-xs text-slate-400 light:text-slate-600">
+            {row.original.remark ?? "-"}
+          </span>
+        ),
+      },
+      {
         header: "Link",
         accessorKey: "link",
         cell: ({ row }) => (

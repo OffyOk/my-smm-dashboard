@@ -10,6 +10,7 @@ export type Order = {
   provider_order_id: number | null;
   provider_code: string | null;
   start_count: number;
+  remark: string | null;
 };
 
 export type OrdersResponse = {
@@ -52,4 +53,7 @@ export type Provider = {
   name: string | null;
   api_url: string;
   api_key: string;
+  balance?: number | null;
+  balance_status?: "ok" | "error";
+  balance_message?: string | null;
 };

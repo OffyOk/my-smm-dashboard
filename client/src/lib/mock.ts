@@ -25,6 +25,7 @@ const mockOrders: Order[] = Array.from({ length: 64 }).map((_, index) => {
     provider_order_id: 88000 + index,
     provider_code: ["SMM-KING", "BOOSTHUB", "VIRALPRO"][index % 3],
     start_count: 1200 + index * 3,
+    remark: "Original order",
   };
 });
 

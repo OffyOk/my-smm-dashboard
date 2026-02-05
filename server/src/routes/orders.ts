@@ -46,6 +46,7 @@ ordersRoutes.get("/", zValidator("query", listQuerySchema), async (c) => {
       status: orders.status,
       provider_order_id: orders.providerOrderId,
       start_count: orders.startCount,
+      remark: orders.remark,
       service_name: services.name,
       provider_code: providers.code,
     })
@@ -100,11 +101,6 @@ ordersRoutes.post("/:id/refill", zValidator("json", refillSchema), async (c) => 
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       order_id: order.id,
-      // service_id: order.service_id,
-      // link: order.link,
-      // quantity: order.quantity,
-      // provider_order_id: order.provider_order_id,
-      // start_count: order.start_count,
       current_count: payload.current_count ?? order.start_count,
     }),
   });

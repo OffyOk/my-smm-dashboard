@@ -95,26 +95,35 @@ ordersRoutes.post("/:id/refill", zValidator("json", refillSchema), async (c) => 
     return c.json({ error: "N8N_REFILL_WEBHOOK_URL not set" }, 500);
   }
 
-  await fetch(webhookUrl, {
+  const response = await fetch(webhookUrl, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       order_id: order.id,
-      service_id: order.service_id,
-      link: order.link,
-      quantity: order.quantity,
-      provider_order_id: order.provider_order_id,
-      start_count: order.start_count,
+      // service_id: order.service_id,
+      // link: order.link,
+      // quantity: order.quantity,
+      // provider_order_id: order.provider_order_id,
+      // start_count: order.start_count,
       current_count: payload.current_count ?? order.start_count,
     }),
   });
 
-  await db
-    .update(orders)
-    .set({ status: "PROCESSING" })
-    .where(eq(orders.id, orderId));
+  if (!response.ok) {
+    const message = await response.text();
+    return c.json({ success: false, message: message || "Refill webhook failed" }, 500);
+  }
 
-  return c.json({ success: true });
+  let resultMessage = "Refill sent";
+  try {
+    const body = await response.json();
+    resultMessage = body?.message ?? resultMessage;
+  } catch {
+    const text = await response.text();
+    if (text) resultMessage = text;
+  }
+
+  return c.json({ success: true, message: resultMessage });
 });
 
 const resubmitSchema = z.object({

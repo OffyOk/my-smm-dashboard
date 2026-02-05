@@ -12,6 +12,7 @@ import { apiFetch } from "../../lib/api";
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
+import { useToast } from "../../components/toast";
 import {
   Dialog,
   DialogContent,
@@ -66,6 +67,7 @@ type OrdersQuery = {
 
 export function OrdersTable() {
   const queryClient = useQueryClient();
+  const { push } = useToast();
   const [query, setQuery] = useState<OrdersQuery>({
     page: 1,
     pageSize: 15,
@@ -96,7 +98,18 @@ export function OrdersTable() {
         method: "POST",
         body: JSON.stringify({ current_count: payload.current_count }),
       }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["orders"] }),
+    onSuccess: (data) => {
+      const message = (data as { message?: string })?.message ?? "Refill sent.";
+      push({ title: "Refill success", description: message, variant: "success" });
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+    },
+    onError: (error) => {
+      push({
+        title: "Refill failed",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "error",
+      });
+    },
   });
 
   const resubmitMutation = useMutation({

@@ -39,6 +39,9 @@ export async function apiFetch<T>(path: string, options: FetchOptions = {}) {
     if (path.startsWith("/api/orders/refill-bulk")) {
       return { message: "OK" } as T;
     }
+    if (path.includes("/api/orders/") && path.endsWith("/refill")) {
+      return { message: "OK" } as T;
+    }
     if (path.startsWith("/api/orders")) {
       return getMockOrders({
         page: Number(options.query?.page ?? 1),

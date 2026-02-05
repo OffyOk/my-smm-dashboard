@@ -8,6 +8,7 @@ import { ServicesPage } from "./pages/ServicesPage";
 import { ProvidersPage } from "./pages/ProvidersPage";
 import { QuickMessagesPage } from "./pages/QuickMessagesPage";
 import { PricingCalculatorPage } from "./pages/PricingCalculatorPage";
+import { ToastViewport } from "./components/toast";
 
 function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -43,6 +44,7 @@ function App() {
           </Routes>
         </main>
       </div>
+      <ToastViewport />
     </div>
   );
 }

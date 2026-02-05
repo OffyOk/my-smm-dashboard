@@ -39,6 +39,12 @@ export type Service = {
   price: number;
   is_active: boolean;
   provider_code: string | null;
+  provider_service_id?: number | null;
+  backup_service_id?: number | null;
+  min_qty?: number | null;
+  max_qty?: number | null;
+  cost_price?: number | null;
+  price_tiers?: unknown;
 };
 
 export type Provider = {

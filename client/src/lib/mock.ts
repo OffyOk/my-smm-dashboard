@@ -59,9 +59,45 @@ const mockQuality: QualityService[] = [
 ];
 
 const mockServices: Service[] = [
-  { id: 101, name: "Instagram Followers - HQ", price: 4.5, is_active: true, provider_code: "SMM-KING" },
-  { id: 208, name: "TikTok Views - Turbo", price: 2.2, is_active: true, provider_code: "BOOSTHUB" },
-  { id: 322, name: "YouTube Likes - Drip", price: 1.1, is_active: false, provider_code: "VIRALPRO" },
+  {
+    id: 101,
+    name: "Instagram Followers - HQ",
+    price: 4.5,
+    is_active: true,
+    provider_code: "SMM-KING",
+    provider_service_id: 9901,
+    backup_service_id: 208,
+    min_qty: 100,
+    max_qty: 10000,
+    cost_price: 2.1,
+    price_tiers: [{ min: 1000, price: 4.2 }],
+  },
+  {
+    id: 208,
+    name: "TikTok Views - Turbo",
+    price: 2.2,
+    is_active: true,
+    provider_code: "BOOSTHUB",
+    provider_service_id: 8812,
+    backup_service_id: 322,
+    min_qty: 500,
+    max_qty: 200000,
+    cost_price: 0.9,
+    price_tiers: [{ min: 5000, price: 2.0 }],
+  },
+  {
+    id: 322,
+    name: "YouTube Likes - Drip",
+    price: 1.1,
+    is_active: false,
+    provider_code: "VIRALPRO",
+    provider_service_id: 7711,
+    backup_service_id: null,
+    min_qty: 50,
+    max_qty: 50000,
+    cost_price: 0.4,
+    price_tiers: [],
+  },
 ];
 
 const mockProviders: Provider[] = [

@@ -4,6 +4,7 @@ import { ordersRoutes } from "./routes/orders";
 import { statsRoutes } from "./routes/stats";
 import { servicesRoutes } from "./routes/services";
 import { providersRoutes } from "./routes/providers";
+import { usersRoutes } from "./routes/users";
 
 const app = new Hono();
 
@@ -37,6 +38,7 @@ app.route("/api/orders", ordersRoutes);
 app.route("/api/stats", statsRoutes);
 app.route("/api/services", servicesRoutes);
 app.route("/api/providers", providersRoutes);
+app.route("/api/users", usersRoutes);
 
 export default app;
 

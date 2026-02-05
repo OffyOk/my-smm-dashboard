@@ -6,6 +6,7 @@ import {
   ListOrdered,
   MessageCircle,
   Calculator,
+  Users,
   PlugZap,
   Settings2,
 } from "lucide-react";
@@ -16,6 +17,7 @@ const navItems = [
   { to: "/orders", label: "Order Manager", icon: ListOrdered },
   { to: "/messages", label: "Quick Messages", icon: MessageCircle },
   { to: "/pricing", label: "Pricing Calculator", icon: Calculator },
+  { to: "/users", label: "Users", icon: Users },
   { to: "/services", label: "Services", icon: Settings2 },
   { to: "/providers", label: "Providers", icon: PlugZap },
 ];

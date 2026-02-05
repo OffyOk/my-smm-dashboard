@@ -63,6 +63,9 @@ type OrdersQuery = {
   pageSize: number;
   search: string;
   status?: OrderStatus;
+  startDate?: string;
+  endDate?: string;
+  remark?: string;
 };
 
 export function OrdersTable() {
@@ -75,6 +78,9 @@ export function OrdersTable() {
   });
   const [refillTarget, setRefillTarget] = useState<Order | null>(null);
   const [resubmitTarget, setResubmitTarget] = useState<Order | null>(null);
+  const [editTarget, setEditTarget] = useState<Order | null>(null);
+  const [editStatus, setEditStatus] = useState<OrderStatus>("PENDING");
+  const [editRemark, setEditRemark] = useState("");
   const [newServiceId, setNewServiceId] = useState("");
   const [newStartCount, setNewStartCount] = useState("");
   const [refillCurrentCount, setRefillCurrentCount] = useState("");
@@ -89,6 +95,9 @@ export function OrdersTable() {
           pageSize: query.pageSize,
           search: query.search,
           status: query.status,
+          startDate: query.startDate,
+          endDate: query.endDate,
+          remark: query.remark,
         },
       }),
   });
@@ -144,6 +153,26 @@ export function OrdersTable() {
     onError: (error) => {
       push({
         title: "Resubmit failed",
+        description:
+          error instanceof Error ? error.message : "Please try again.",
+        variant: "error",
+      });
+    },
+  });
+
+  const editMutation = useMutation({
+    mutationFn: async (payload: { id: number; status?: OrderStatus; remark?: string }) =>
+      apiFetch(`/api/orders/${payload.id}`, {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+      }),
+    onSuccess: () => {
+      push({ title: "Order updated", variant: "success" });
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+    },
+    onError: (error) => {
+      push({
+        title: "Update failed",
         description:
           error instanceof Error ? error.message : "Please try again.",
         variant: "error",
@@ -234,6 +263,17 @@ export function OrdersTable() {
             <Button
               size="sm"
               variant="outline"
+              onClick={() => {
+                setEditTarget(row.original);
+                setEditStatus(row.original.status);
+                setEditRemark(row.original.remark ?? "");
+              }}
+            >
+              Edit
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
               onClick={() => setRefillTarget(row.original)}
             >
               Refill
@@ -307,6 +347,96 @@ export function OrdersTable() {
           <RefreshCw className="h-4 w-4" />
           Refresh
         </Button>
+        <Select
+          value={query.remark ?? "ALL"}
+          onValueChange={(value) =>
+            setQuery((prev) => ({
+              ...prev,
+              page: 1,
+              remark: value === "ALL" ? undefined : value,
+            }))
+          }
+        >
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Remark" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">All remarks</SelectItem>
+            <SelectItem value="Original">Original</SelectItem>
+            <SelectItem value="Refill">Refill</SelectItem>
+            <SelectItem value="Resubmit">Resubmit</SelectItem>
+          </SelectContent>
+        </Select>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              const today = new Date();
+              const iso = today.toISOString().slice(0, 10);
+              setQuery((prev) => ({ ...prev, page: 1, startDate: iso, endDate: iso }));
+            }}
+          >
+            Today
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              const end = new Date();
+              const start = new Date();
+              start.setDate(end.getDate() - 2);
+              setQuery((prev) => ({
+                ...prev,
+                page: 1,
+                startDate: start.toISOString().slice(0, 10),
+                endDate: end.toISOString().slice(0, 10),
+              }));
+            }}
+          >
+            Last 3 Days
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              const end = new Date();
+              const start = new Date();
+              start.setDate(end.getDate() - 6);
+              setQuery((prev) => ({
+                ...prev,
+                page: 1,
+                startDate: start.toISOString().slice(0, 10),
+                endDate: end.toISOString().slice(0, 10),
+              }));
+            }}
+          >
+            Last Week
+          </Button>
+        </div>
+        <div className="flex items-center gap-2">
+          <Input
+            type="date"
+            value={query.startDate ?? ""}
+            onChange={(event) =>
+              setQuery((prev) => ({ ...prev, page: 1, startDate: event.target.value }))
+            }
+          />
+          <Input
+            type="date"
+            value={query.endDate ?? ""}
+            onChange={(event) =>
+              setQuery((prev) => ({ ...prev, page: 1, endDate: event.target.value }))
+            }
+          />
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setQuery((prev) => ({ ...prev, page: 1, startDate: undefined, endDate: undefined }))}
+          >
+            Clear
+          </Button>
+        </div>
       </div>
 
       <div className="space-y-3 sm:hidden">
@@ -613,6 +743,63 @@ export function OrdersTable() {
               }}
             >
               Submit
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={!!editTarget}
+        onOpenChange={() => {
+          setEditTarget(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Order</DialogTitle>
+            <DialogDescription>
+              Update status or remark for order #{editTarget?.id}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Select
+              value={editStatus}
+              onValueChange={(value) => setEditStatus(value as OrderStatus)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                {statusOptions.map((status) => (
+                  <SelectItem key={status} value={status}>
+                    {status}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Input
+              placeholder="Remark"
+              value={editRemark}
+              onChange={(event) => setEditRemark(event.target.value)}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditTarget(null)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (editTarget) {
+                  editMutation.mutate({
+                    id: editTarget.id,
+                    status: editStatus,
+                    remark: editRemark || null,
+                  });
+                  setEditTarget(null);
+                }
+              }}
+            >
+              Save
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -8,6 +8,7 @@ import { ServicesPage } from "./pages/ServicesPage";
 import { ProvidersPage } from "./pages/ProvidersPage";
 import { QuickMessagesPage } from "./pages/QuickMessagesPage";
 import { PricingCalculatorPage } from "./pages/PricingCalculatorPage";
+import { UsersPage } from "./pages/UsersPage";
 import { ToastViewport } from "./components/toast";
 
 function App() {
@@ -39,6 +40,7 @@ function App() {
             <Route path="/orders" element={<OrdersPage />} />
             <Route path="/messages" element={<QuickMessagesPage />} />
             <Route path="/pricing" element={<PricingCalculatorPage />} />
+            <Route path="/users" element={<UsersPage />} />
             <Route path="/services" element={<ServicesPage />} />
             <Route path="/providers" element={<ProvidersPage />} />
           </Routes>

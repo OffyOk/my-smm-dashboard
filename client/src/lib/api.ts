@@ -4,6 +4,7 @@
   getMockQuality,
   getMockServices,
   getMockSummary,
+  getMockUsers,
 } from "./mock";
 
 const baseUrl = import.meta.env.VITE_API_URL ?? "http://localhost:3001";
@@ -64,6 +65,9 @@ export async function apiFetch<T>(path: string, options: FetchOptions = {}) {
     }
     if (path.startsWith("/api/providers")) {
       return getMockProviders() as T;
+    }
+    if (path.startsWith("/api/users")) {
+      return getMockUsers() as T;
     }
     return { success: true } as T;
   }

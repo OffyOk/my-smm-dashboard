@@ -1,7 +1,7 @@
 ﻿import { Hono } from "hono";
 import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
-import { and, desc, eq, ilike, or, sql } from "drizzle-orm";
+import { and, desc, eq, gte, ilike, lte, or, sql } from "drizzle-orm";
 import { db } from "../db";
 import { orders, providers, services } from "../db/schema";
 
@@ -12,14 +12,27 @@ const listQuerySchema = z.object({
   pageSize: z.coerce.number().min(1).max(100).default(15),
   search: z.string().optional(),
   status: z.string().optional(),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
+  remark: z.string().optional(),
 });
 
 ordersRoutes.get("/", zValidator("query", listQuerySchema), async (c) => {
-  const { page, pageSize, search, status } = c.req.valid("query");
+  const { page, pageSize, search, status, startDate, endDate, remark } =
+    c.req.valid("query");
 
   const filters = [];
   if (status) {
     filters.push(eq(orders.status, status));
+  }
+  if (remark) {
+    filters.push(ilike(orders.remark, `%${remark}%`));
+  }
+  if (startDate) {
+    filters.push(gte(orders.createdAt, `${startDate}T00:00:00`));
+  }
+  if (endDate) {
+    filters.push(lte(orders.createdAt, `${endDate}T23:59:59.999`));
   }
   if (search) {
     const numeric = Number(search);
@@ -155,6 +168,26 @@ ordersRoutes.post("/resubmit", zValidator("json", resubmitSchema), async (c) => 
     .update(orders)
     .set({ status: "PROCESSING" })
     .where(eq(orders.id, payload.old_order_id));
+
+  return c.json({ success: true });
+});
+
+const patchSchema = z.object({
+  status: z.string().optional(),
+  remark: z.string().nullable().optional(),
+});
+
+ordersRoutes.patch("/:id", zValidator("json", patchSchema), async (c) => {
+  const id = Number(c.req.param("id"));
+  const payload = c.req.valid("json");
+
+  await db
+    .update(orders)
+    .set({
+      ...(payload.status !== undefined ? { status: payload.status } : {}),
+      ...(payload.remark !== undefined ? { remark: payload.remark } : {}),
+    })
+    .where(eq(orders.id, id));
 
   return c.json({ success: true });
 });

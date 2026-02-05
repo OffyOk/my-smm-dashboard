@@ -57,3 +57,12 @@ export type Provider = {
   balance_status?: "ok" | "error";
   balance_message?: string | null;
 };
+
+export type User = {
+  id: number;
+  platform_user_id: string;
+  username: string | null;
+  balance: number;
+  total_spent: number;
+  created_at?: string;
+};

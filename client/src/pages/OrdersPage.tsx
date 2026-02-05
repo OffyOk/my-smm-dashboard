@@ -5,8 +5,6 @@ import { apiFetch } from "../lib/api";
 import type { Service } from "../lib/types";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
-import { Switch } from "../components/ui/switch";
-import { Textarea } from "../components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -18,12 +16,12 @@ import {
 
 type NewOrderDraft = {
   service_id: number | "";
+  service_pick: string;
   link: string;
   quantity: number | "";
   start_count: number | "";
   custom_price: number | null;
   wait_for_prev: boolean;
-  remark: string;
 };
 
 type ConfirmationItem = {
@@ -38,12 +36,12 @@ type RefillDraft = {
 
 const emptyDraft: NewOrderDraft = {
   service_id: "",
+  service_pick: "",
   link: "",
   quantity: "",
   start_count: "",
   custom_price: null,
   wait_for_prev: false,
-  remark: "",
 };
 
 const emptyRefill: RefillDraft = {
@@ -72,22 +70,30 @@ export function OrdersPage() {
     return map;
   }, [servicesQuery.data]);
 
+  const serviceOptions = useMemo(
+    () =>
+      (servicesQuery.data ?? []).map(
+        (service) => `${service.id} | ${service.name}`,
+      ),
+    [servicesQuery.data],
+  );
+
   const createOrders = useMutation({
     mutationFn: (payload: { orders: NewOrderDraft[] }) =>
-      apiFetch<{ created_ids?: Array<number> } | Array<{ created_ids?: Array<number> }>>(
-        "/api/orders/bulk",
-        {
-          method: "POST",
-          body: JSON.stringify(payload),
-        }
-      ),
+      apiFetch<
+        { created_ids?: Array<number> } | Array<{ created_ids?: Array<number> }>
+      >("/api/orders/bulk", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
     onSuccess: (result, variables) => {
       const raw = Array.isArray(result) ? result[0] : result;
       const createdIds = raw?.created_ids ?? [];
       const cleanOrders = variables.orders;
       const messages = cleanOrders.map((order, index) => {
         const orderId = createdIds[index];
-        const serviceName = serviceMap.get(Number(order.service_id)) ?? String(order.service_id);
+        const serviceName =
+          serviceMap.get(Number(order.service_id)) ?? String(order.service_id);
         const startCount = Number(order.start_count ?? 0);
         const quantity = Number(order.quantity ?? 0);
         const target = startCount + quantity;
@@ -109,7 +115,9 @@ export function OrdersPage() {
   });
 
   const sendRefills = useMutation({
-    mutationFn: (payload: { refills: { order_id: number; current_count: number }[] }) =>
+    mutationFn: (payload: {
+      refills: { order_id: number; current_count: number }[];
+    }) =>
       apiFetch("/api/orders/refill-bulk", {
         method: "POST",
         body: JSON.stringify(payload),
@@ -118,7 +126,7 @@ export function OrdersPage() {
 
   function updateDraft(index: number, patch: Partial<NewOrderDraft>) {
     setDrafts((prev) =>
-      prev.map((draft, i) => (i === index ? { ...draft, ...patch } : draft))
+      prev.map((draft, i) => (i === index ? { ...draft, ...patch } : draft)),
     );
   }
 
@@ -132,7 +140,7 @@ export function OrdersPage() {
 
   function submitOrders() {
     const cleaned = drafts.filter(
-      (d) => d.service_id !== "" && d.link.trim() !== "" && d.quantity !== ""
+      (d) => d.service_id !== "" && d.link.trim() !== "" && d.quantity !== "",
     );
     if (!cleaned.length) {
       return;
@@ -147,6 +155,7 @@ export function OrdersPage() {
           d.custom_price === null || d.custom_price === undefined
             ? null
             : Number(d.custom_price),
+        remark: "Original",
       })),
     });
     setDialogOpen(false);
@@ -155,7 +164,7 @@ export function OrdersPage() {
 
   function updateRefill(index: number, patch: Partial<RefillDraft>) {
     setRefills((prev) =>
-      prev.map((draft, i) => (i === index ? { ...draft, ...patch } : draft))
+      prev.map((draft, i) => (i === index ? { ...draft, ...patch } : draft)),
     );
   }
 
@@ -168,7 +177,9 @@ export function OrdersPage() {
   }
 
   function submitRefills() {
-    const cleaned = refills.filter((r) => r.order_id !== "" && r.current_count !== "");
+    const cleaned = refills.filter(
+      (r) => r.order_id !== "" && r.current_count !== "",
+    );
     if (!cleaned.length) {
       return;
     }
@@ -201,7 +212,8 @@ export function OrdersPage() {
         <div>
           <h2 className="text-2xl font-semibold">Order Manager</h2>
           <p className="text-sm text-slate-400 light:text-slate-600">
-            Monitor the full order lifecycle with instant refill and resubmit controls.
+            Monitor the full order lifecycle with instant refill and resubmit
+            controls.
           </p>
         </div>
         <div className="hidden flex-wrap gap-2 sm:flex">
@@ -214,16 +226,20 @@ export function OrdersPage() {
       <OrdersTable />
 
       <div className="fixed inset-x-0 bottom-0 z-30 flex gap-2 border-t border-slate-800/60 bg-panel-950/95 p-3 backdrop-blur sm:hidden light:border-slate-200 light:bg-white/95">
+        <Button
+          className="flex-1"
+          variant="outline"
+          onClick={() => setRefillOpen(true)}
+        >
+          Send Refill
+        </Button>
         <Button className="flex-1" onClick={() => setDialogOpen(true)}>
           Create Orders
-        </Button>
-        <Button className="flex-1" variant="outline" onClick={() => setRefillOpen(true)}>
-          Send Refill
         </Button>
       </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Create Orders</DialogTitle>
             <DialogDescription>
@@ -237,41 +253,62 @@ export function OrdersPage() {
                 key={index}
                 className="grid gap-3 rounded-lg border border-slate-800/60 p-3 light:border-slate-200"
               >
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid gap-3 lg:grid-cols-[1.2fr_1.6fr_auto]">
+                  <div>
+                    <Input
+                      placeholder="Service (type to search)"
+                      list="service-list"
+                      value={draft.service_pick}
+                      onChange={(event) => {
+                        const value = event.target.value;
+                        const id = Number(value.split("|")[0]?.trim());
+                        updateDraft(index, {
+                          service_pick: value,
+                          service_id: Number.isNaN(id) ? "" : id,
+                        });
+                      }}
+                    />
+                  </div>
                   <Input
-                    placeholder="Service ID"
-                    type="number"
-                    value={draft.service_id}
+                    placeholder="Link URL"
+                    value={draft.link}
                     onChange={(event) =>
-                      updateDraft(index, {
-                        service_id: event.target.value ? Number(event.target.value) : "",
-                      })
+                      updateDraft(index, { link: event.target.value })
                     }
                   />
+                  <label className="flex items-center gap-2 rounded-md border border-slate-800/60 px-3 py-2 text-xs light:border-slate-200">
+                    <input
+                      type="checkbox"
+                      checked={draft.wait_for_prev}
+                      onChange={(event) =>
+                        updateDraft(index, { wait_for_prev: event.target.checked })
+                      }
+                    />
+                    Wait approve
+                  </label>
+                </div>
+                <div className="grid gap-3 md:grid-cols-3">
                   <Input
                     placeholder="Quantity"
                     type="number"
                     value={draft.quantity}
                     onChange={(event) =>
                       updateDraft(index, {
-                        quantity: event.target.value ? Number(event.target.value) : "",
+                        quantity: event.target.value
+                          ? Number(event.target.value)
+                          : "",
                       })
                     }
                   />
-                </div>
-                <Input
-                  placeholder="Link URL"
-                  value={draft.link}
-                  onChange={(event) => updateDraft(index, { link: event.target.value })}
-                />
-                <div className="grid grid-cols-2 gap-3">
                   <Input
                     placeholder="Start Count"
                     type="number"
                     value={draft.start_count}
                     onChange={(event) =>
                       updateDraft(index, {
-                        start_count: event.target.value ? Number(event.target.value) : "",
+                        start_count: event.target.value
+                          ? Number(event.target.value)
+                          : "",
                       })
                     }
                   />
@@ -282,30 +319,29 @@ export function OrdersPage() {
                     value={draft.custom_price ?? ""}
                     onChange={(event) =>
                       updateDraft(index, {
-                        custom_price: event.target.value ? Number(event.target.value) : null,
+                        custom_price: event.target.value
+                          ? Number(event.target.value)
+                          : null,
                       })
                     }
                   />
                 </div>
-                <div className="flex items-center justify-between rounded-md border border-slate-800/60 px-3 py-2 text-sm light:border-slate-200">
-                  <span>Wait For Prev</span>
-                  <Switch
-                    checked={draft.wait_for_prev}
-                    onCheckedChange={(value) => updateDraft(index, { wait_for_prev: value })}
-                  />
-                </div>
-                <Textarea
-                  placeholder="Remark (optional)"
-                  value={draft.remark}
-                  onChange={(event) => updateDraft(index, { remark: event.target.value })}
-                />
                 {drafts.length > 1 && (
-                  <Button variant="outline" size="sm" onClick={() => removeRow(index)}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => removeRow(index)}
+                  >
                     Remove
                   </Button>
                 )}
               </div>
             ))}
+            <datalist id="service-list">
+              {serviceOptions.map((option) => (
+                <option key={option} value={option} />
+              ))}
+            </datalist>
             <Button variant="outline" onClick={addRow}>
               Add Row
             </Button>
@@ -332,9 +368,20 @@ export function OrdersPage() {
           </DialogHeader>
           <div className="space-y-4">
             {confirmations.map((item, index) => (
-              <div key={index} className="space-y-2 rounded-lg border border-slate-800/60 p-3 light:border-slate-200">
-                <Textarea value={item.message} readOnly className="min-h-[220px]" />
-                <Button variant="outline" size="sm" onClick={() => copyToClipboard(item.message)}>
+              <div
+                key={index}
+                className="space-y-2 rounded-lg border border-slate-800/60 p-3 light:border-slate-200"
+              >
+                <Textarea
+                  value={item.message}
+                  readOnly
+                  className="min-h-[220px]"
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => copyToClipboard(item.message)}
+                >
                   Copy Message
                 </Button>
               </div>
@@ -344,7 +391,9 @@ export function OrdersPage() {
             <Button
               variant="outline"
               onClick={() =>
-                copyToClipboard(confirmations.map((item) => item.message).join("\n\n"))
+                copyToClipboard(
+                  confirmations.map((item) => item.message).join("\n\n"),
+                )
               }
             >
               Copy All
@@ -374,7 +423,9 @@ export function OrdersPage() {
                   value={refill.order_id}
                   onChange={(event) =>
                     updateRefill(index, {
-                      order_id: event.target.value ? Number(event.target.value) : "",
+                      order_id: event.target.value
+                        ? Number(event.target.value)
+                        : "",
                     })
                   }
                 />
@@ -384,12 +435,18 @@ export function OrdersPage() {
                   value={refill.current_count}
                   onChange={(event) =>
                     updateRefill(index, {
-                      current_count: event.target.value ? Number(event.target.value) : "",
+                      current_count: event.target.value
+                        ? Number(event.target.value)
+                        : "",
                     })
                   }
                 />
                 {refills.length > 1 && (
-                  <Button variant="outline" size="sm" onClick={() => removeRefillRow(index)}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => removeRefillRow(index)}
+                  >
                     Remove
                   </Button>
                 )}

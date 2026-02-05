@@ -148,3 +148,22 @@ export function getMockServices(): Service[] {
 export function getMockProviders(): Provider[] {
   return mockProviders;
 }
+
+export function getMockUsers() {
+  return [
+    {
+      id: 1,
+      platform_user_id: "line_001",
+      username: "somchai",
+      balance: 120.5,
+      total_spent: 980.75,
+    },
+    {
+      id: 2,
+      platform_user_id: "fb_002",
+      username: "suda",
+      balance: 40.0,
+      total_spent: 250.0,
+    },
+  ];
+}

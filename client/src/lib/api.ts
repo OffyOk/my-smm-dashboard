@@ -8,6 +8,8 @@
 
 const baseUrl = import.meta.env.VITE_API_URL ?? "http://localhost:3001";
 const mockMode = import.meta.env.VITE_MOCK_MODE === "true";
+const adminUser = import.meta.env.VITE_ADMIN_USER;
+const adminPass = import.meta.env.VITE_ADMIN_PASS;
 
 type FetchOptions = RequestInit & { query?: Record<string, string | number | undefined> };
 
@@ -53,6 +55,13 @@ export async function apiFetch<T>(path: string, options: FetchOptions = {}) {
     if (path.startsWith("/api/services")) {
       return getMockServices() as T;
     }
+    if (path.startsWith("/api/providers/balances")) {
+      return [
+        { code: "SMM-KING", balance: 12.5, balance_status: "ok" },
+        { code: "BOOSTHUB", balance: 1.4, balance_status: "ok" },
+        { code: "VIRALPRO", balance: 4.2, balance_status: "ok" },
+      ] as T;
+    }
     if (path.startsWith("/api/providers")) {
       return getMockProviders() as T;
     }
@@ -72,6 +81,9 @@ export async function apiFetch<T>(path: string, options: FetchOptions = {}) {
     ...options,
     headers: {
       "Content-Type": "application/json",
+      ...(adminUser && adminPass
+        ? { Authorization: `Basic ${btoa(`${adminUser}:${adminPass}`)}` }
+        : {}),
       ...(options.headers ?? {}),
     },
   });

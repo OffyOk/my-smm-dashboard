@@ -7,7 +7,29 @@ import { providersRoutes } from "./routes/providers";
 
 const app = new Hono();
 
+const adminUser = process.env.ADMIN_USER;
+const adminPass = process.env.ADMIN_PASS;
+
 app.use("/api/*", cors({ origin: "*" }));
+
+if (adminUser && adminPass) {
+  app.use("/api/*", async (c, next) => {
+    const auth = c.req.header("Authorization");
+    if (!auth || !auth.startsWith("Basic ")) {
+      return c.text("Unauthorized", 401, {
+        "WWW-Authenticate": "Basic realm=\"Admin\"",
+      });
+    }
+    const decoded = Buffer.from(auth.replace("Basic ", ""), "base64").toString();
+    const [user, pass] = decoded.split(":");
+    if (user !== adminUser || pass !== adminPass) {
+      return c.text("Unauthorized", 401, {
+        "WWW-Authenticate": "Basic realm=\"Admin\"",
+      });
+    }
+    await next();
+  });
+}
 
 app.get("/", (c) => c.json({ ok: true }));
 

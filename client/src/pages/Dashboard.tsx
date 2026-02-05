@@ -16,6 +16,12 @@ import {
 } from "../components/ui/table";
 import type { QualityService, SummaryStats } from "../lib/types";
 
+type BalanceItem = {
+  code: string;
+  balance: number | null;
+  balance_status: "ok" | "error";
+};
+
 export function Dashboard() {
   const summaryQuery = useQuery({
     queryKey: ["summary"],
@@ -27,15 +33,25 @@ export function Dashboard() {
     queryFn: () => apiFetch<QualityService[]>("/api/stats/quality"),
   });
 
+  const balancesQuery = useQuery({
+    queryKey: ["providers", "balances"],
+    queryFn: () => apiFetch<BalanceItem[]>("/api/providers/balances"),
+  });
+
   const summary = summaryQuery.data ?? {
     totalToday: 0,
     pendingQueue: 0,
     refillRequests: 0,
   };
 
+  const lowBalances =
+    balancesQuery.data?.filter(
+      (item) => item.balance_status === "ok" && item.balance !== null && item.balance < 2
+    ) ?? [];
+
   return (
     <div className="space-y-8">
-      <section className="grid gap-4 md:grid-cols-3">
+      <section className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader>
             <CardTitle>Total Orders Today</CardTitle>
@@ -72,6 +88,24 @@ export function Dashboard() {
           <CardContent>
             <p className="font-mono text-3xl font-semibold">
               {summary.refillRequests.toLocaleString()}
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Low Provider Balance</CardTitle>
+            <p className="text-xs uppercase tracking-[0.3em] text-slate-500">
+              Below $2
+            </p>
+          </CardHeader>
+          <CardContent>
+            <p className="font-mono text-3xl font-semibold">
+              {lowBalances.length}
+            </p>
+            <p className="mt-2 text-xs text-slate-400">
+              {lowBalances.length
+                ? lowBalances.map((item) => item.code).join(", ")
+                : "All providers healthy"}
             </p>
           </CardContent>
         </Card>

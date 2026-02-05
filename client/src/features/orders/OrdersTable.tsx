@@ -6,7 +6,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import type { ColumnDef } from "@tanstack/react-table";
-import { MoreHorizontal, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import type { Order, OrdersResponse, OrderStatus } from "../../lib/types";
 import { apiFetch } from "../../lib/api";
 import { Badge } from "../../components/ui/badge";
@@ -76,6 +76,7 @@ export function OrdersTable() {
   const [refillTarget, setRefillTarget] = useState<Order | null>(null);
   const [resubmitTarget, setResubmitTarget] = useState<Order | null>(null);
   const [newServiceId, setNewServiceId] = useState("");
+  const [newStartCount, setNewStartCount] = useState("");
   const [refillCurrentCount, setRefillCurrentCount] = useState("");
   const [expandedIds, setExpandedIds] = useState<Set<number>>(() => new Set());
 
@@ -100,13 +101,18 @@ export function OrdersTable() {
       }),
     onSuccess: (data) => {
       const message = (data as { message?: string })?.message ?? "Refill sent.";
-      push({ title: "Refill success", description: message, variant: "success" });
+      push({
+        title: "Refill success",
+        description: message,
+        variant: "success",
+      });
       queryClient.invalidateQueries({ queryKey: ["orders"] });
     },
     onError: (error) => {
       push({
         title: "Refill failed",
-        description: error instanceof Error ? error.message : "Please try again.",
+        description:
+          error instanceof Error ? error.message : "Please try again.",
         variant: "error",
       });
     },
@@ -116,6 +122,7 @@ export function OrdersTable() {
     mutationFn: async (payload: {
       old_order_id: number;
       new_service_id: number;
+      new_start_count: number;
       link: string;
       qty: number;
     }) =>
@@ -123,7 +130,25 @@ export function OrdersTable() {
         method: "POST",
         body: JSON.stringify(payload),
       }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["orders"] }),
+    // onSuccess: () => queryClient.invalidateQueries({ queryKey: ["orders"] }),
+    onSuccess: (data) => {
+      const message =
+        (data as { message?: string })?.message ?? "Resubmit sent.";
+      push({
+        title: "Resubmit success",
+        description: message,
+        variant: "success",
+      });
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+    },
+    onError: (error) => {
+      push({
+        title: "Resubmit failed",
+        description:
+          error instanceof Error ? error.message : "Please try again.",
+        variant: "error",
+      });
+    },
   });
 
   const columns = useMemo<ColumnDef<Order>[]>(
@@ -163,12 +188,13 @@ export function OrdersTable() {
       {
         header: "Link",
         accessorKey: "link",
+        maxSize: 100,
         cell: ({ row }) => (
           <a
             href={row.original.link}
             target="_blank"
             rel="noreferrer"
-            className="max-w-[220px] truncate text-sky-400 hover:text-sky-300"
+            className="block max-w-[200px] truncate text-sky-400 hover:text-sky-300"
           >
             {row.original.link}
           </a>
@@ -199,15 +225,24 @@ export function OrdersTable() {
           </span>
         ),
       },
+
       {
         id: "actions",
         header: "",
         cell: ({ row }) => (
           <div className="flex items-center justify-end gap-2">
-            <Button size="sm" variant="outline" onClick={() => setRefillTarget(row.original)}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setRefillTarget(row.original)}
+            >
               Refill
             </Button>
-            <Button size="sm" variant="outline" onClick={() => setResubmitTarget(row.original)}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setResubmitTarget(row.original)}
+            >
               Resubmit
             </Button>
           </div>
@@ -278,77 +313,94 @@ export function OrdersTable() {
         {ordersQuery.data?.data.map((order) => {
           const isExpanded = expandedIds.has(order.id);
           return (
-          <div
-            key={order.id}
-            className="rounded-lg border border-slate-800/60 bg-slate-950/40 p-4 text-sm light:border-slate-200 light:bg-white"
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="font-mono text-xs text-slate-400">#{order.id}</p>
-                <p className="text-base font-semibold">{order.service_name}</p>
-                <p className="mt-1 text-xs text-slate-500">
-                  {new Date(order.created_at).toLocaleString()}
-                </p>
-              </div>
-              <Badge variant={statusVariant(order.status)}>{order.status}</Badge>
-            </div>
-            <div className="mt-3 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-slate-500">Qty</span>
-                <span className="font-mono">{order.quantity}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-slate-500">Provider</span>
-                <span className="font-mono text-xs">{order.provider_code ?? "-"}</span>
-              </div>
-              {isExpanded && (
+            <div
+              key={order.id}
+              className="rounded-lg border border-slate-800/60 bg-slate-950/40 p-4 text-sm light:border-slate-200 light:bg-white"
+            >
+              <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-xs text-slate-500">Link</p>
-                  <a
-                    href={order.link}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="block truncate text-sky-400"
-                  >
-                    {order.link}
-                  </a>
+                  <p className="font-mono text-xs text-slate-400">
+                    #{order.id}
+                  </p>
+                  <p className="text-base font-semibold">
+                    {order.service_name}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    {new Date(order.created_at).toLocaleString()}
+                  </p>
                 </div>
-              )}
+                <Badge variant={statusVariant(order.status)}>
+                  {order.status}
+                </Badge>
+              </div>
+              <div className="mt-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-slate-500">Qty</span>
+                  <span className="font-mono">{order.quantity}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-slate-500">Provider</span>
+                  <span className="font-mono text-xs">
+                    {order.provider_code ?? "-"}
+                  </span>
+                </div>
+                {isExpanded && (
+                  <div>
+                    <p className="text-xs text-slate-500">Link</p>
+                    <a
+                      href={order.link}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="block truncate text-sky-400"
+                    >
+                      {order.link}
+                    </a>
+                  </div>
+                )}
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() =>
+                    setExpandedIds((prev) => {
+                      const next = new Set(prev);
+                      if (next.has(order.id)) {
+                        next.delete(order.id);
+                      } else {
+                        next.add(order.id);
+                      }
+                      return next;
+                    })
+                  }
+                >
+                  {isExpanded ? "Hide Details" : "View Details"}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => navigator.clipboard.writeText(order.link)}
+                >
+                  Copy Link
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setRefillTarget(order)}
+                >
+                  Refill
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setResubmitTarget(order)}
+                >
+                  Resubmit
+                </Button>
+              </div>
             </div>
-            <div className="mt-4 flex flex-wrap gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() =>
-                  setExpandedIds((prev) => {
-                    const next = new Set(prev);
-                    if (next.has(order.id)) {
-                      next.delete(order.id);
-                    } else {
-                      next.add(order.id);
-                    }
-                    return next;
-                  })
-                }
-              >
-                {isExpanded ? "Hide Details" : "View Details"}
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => navigator.clipboard.writeText(order.link)}
-              >
-                Copy Link
-              </Button>
-              <Button size="sm" variant="outline" onClick={() => setRefillTarget(order)}>
-                Refill
-              </Button>
-              <Button size="sm" variant="outline" onClick={() => setResubmitTarget(order)}>
-                Resubmit
-              </Button>
-            </div>
-          </div>
-        )})}
+          );
+        })}
         {!ordersQuery.data?.data.length && (
           <div className="rounded-lg border border-slate-800/60 p-4 text-center text-slate-400 light:border-slate-200">
             No orders found.
@@ -357,41 +409,50 @@ export function OrdersTable() {
       </div>
 
       <div className="hidden sm:block">
-        <Table>
-        <TableHeader>
-          {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id}>
-              {headerGroup.headers.map((header) => (
-                <TableHead key={header.id}>
-                  {header.isPlaceholder
-                    ? null
-                    : flexRender(
-                        header.column.columnDef.header,
-                        header.getContext(),
-                      )}
-                </TableHead>
-              ))}
-            </TableRow>
-          ))}
-        </TableHeader>
-        <TableBody>
-          {table.getRowModel().rows.map((row) => (
-            <TableRow key={row.id}>
-              {row.getVisibleCells().map((cell) => (
-                <TableCell key={cell.id}>
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
+        <Table className="table-fixed">
+          <TableHeader>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                  <TableHead
+                    key={header.id}
+                    className={
+                      header.column.id === "link"
+                        ? "w-[220px]"
+                        : header.column.id === "actions"
+                          ? "w-[190px]"
+                          : undefined
+                    }
+                  >
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext(),
+                        )}
+                  </TableHead>
+                ))}
+              </TableRow>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {table.getRowModel().rows.map((row) => (
+              <TableRow key={row.id}>
+                {row.getVisibleCells().map((cell) => (
+                  <TableCell key={cell.id}>
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))}
+            {!ordersQuery.data?.data.length && (
+              <TableRow>
+                <TableCell colSpan={8} className="text-center text-slate-400">
+                  No orders found.
                 </TableCell>
-              ))}
-            </TableRow>
-          ))}
-          {!ordersQuery.data?.data.length && (
-            <TableRow>
-              <TableCell colSpan={8} className="text-center text-slate-400">
-                No orders found.
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
+              </TableRow>
+            )}
+          </TableBody>
         </Table>
       </div>
 
@@ -444,7 +505,10 @@ export function OrdersTable() {
             <DialogTitle>Refill Order</DialogTitle>
             <DialogDescription>
               Confirm refill for order #{refillTarget?.id}. Start count:{" "}
-              {refillTarget?.start_count}
+              {refillTarget?.start_count}. Quantity: {refillTarget?.quantity}.
+              Target count:{" "}
+              {(refillTarget?.start_count ?? 0) + (refillTarget?.quantity ?? 0)}
+              .
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
@@ -484,6 +548,7 @@ export function OrdersTable() {
         onOpenChange={() => {
           setResubmitTarget(null);
           setNewServiceId("");
+          setNewStartCount("");
         }}
       >
         <DialogContent>
@@ -520,6 +585,12 @@ export function OrdersTable() {
               value={newServiceId}
               onChange={(event) => setNewServiceId(event.target.value)}
             />
+            <Input
+              placeholder="New Start Count"
+              type="number"
+              value={newStartCount}
+              onChange={(event) => setNewStartCount(event.target.value)}
+            />
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setResubmitTarget(null)}>
@@ -527,14 +598,16 @@ export function OrdersTable() {
             </Button>
             <Button
               onClick={() => {
-                if (resubmitTarget && newServiceId) {
+                if (resubmitTarget && newServiceId && newStartCount) {
                   resubmitMutation.mutate({
                     old_order_id: resubmitTarget.id,
                     new_service_id: Number(newServiceId),
+                    new_start_count: Number(newStartCount),
                     link: resubmitTarget.link,
                     qty: resubmitTarget.quantity,
                   });
                   setNewServiceId("");
+                  setNewStartCount("");
                   setResubmitTarget(null);
                 }
               }}

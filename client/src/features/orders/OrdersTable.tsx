@@ -161,7 +161,11 @@ export function OrdersTable() {
   });
 
   const editMutation = useMutation({
-    mutationFn: async (payload: { id: number; status?: OrderStatus; remark?: string }) =>
+    mutationFn: async (payload: {
+      id: number;
+      status?: OrderStatus;
+      remark?: string;
+    }) =>
       apiFetch(`/api/orders/${payload.id}`, {
         method: "PATCH",
         body: JSON.stringify(payload),
@@ -374,7 +378,12 @@ export function OrdersTable() {
             onClick={() => {
               const today = new Date();
               const iso = today.toISOString().slice(0, 10);
-              setQuery((prev) => ({ ...prev, page: 1, startDate: iso, endDate: iso }));
+              setQuery((prev) => ({
+                ...prev,
+                page: 1,
+                startDate: iso,
+                endDate: iso,
+              }));
             }}
           >
             Today
@@ -419,20 +428,35 @@ export function OrdersTable() {
             type="date"
             value={query.startDate ?? ""}
             onChange={(event) =>
-              setQuery((prev) => ({ ...prev, page: 1, startDate: event.target.value }))
+              setQuery((prev) => ({
+                ...prev,
+                page: 1,
+                startDate: event.target.value,
+              }))
             }
           />
           <Input
             type="date"
             value={query.endDate ?? ""}
             onChange={(event) =>
-              setQuery((prev) => ({ ...prev, page: 1, endDate: event.target.value }))
+              setQuery((prev) => ({
+                ...prev,
+                page: 1,
+                endDate: event.target.value,
+              }))
             }
           />
           <Button
             size="sm"
             variant="outline"
-            onClick={() => setQuery((prev) => ({ ...prev, page: 1, startDate: undefined, endDate: undefined }))}
+            onClick={() =>
+              setQuery((prev) => ({
+                ...prev,
+                page: 1,
+                startDate: undefined,
+                endDate: undefined,
+              }))
+            }
           >
             Clear
           </Button>
@@ -793,7 +817,7 @@ export function OrdersTable() {
                   editMutation.mutate({
                     id: editTarget.id,
                     status: editStatus,
-                    remark: editRemark || null,
+                    remark: editRemark || "",
                   });
                   setEditTarget(null);
                 }

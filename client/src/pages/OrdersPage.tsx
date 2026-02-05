@@ -281,7 +281,9 @@ export function OrdersPage() {
                       type="checkbox"
                       checked={draft.wait_for_prev}
                       onChange={(event) =>
-                        updateDraft(index, { wait_for_prev: event.target.checked })
+                        updateDraft(index, {
+                          wait_for_prev: event.target.checked,
+                        })
                       }
                     />
                     Wait approve
@@ -372,7 +374,7 @@ export function OrdersPage() {
                 key={index}
                 className="space-y-2 rounded-lg border border-slate-800/60 p-3 light:border-slate-200"
               >
-                <Textarea
+                <textarea
                   value={item.message}
                   readOnly
                   className="min-h-[220px]"

@@ -1,0 +1,28 @@
+services:
+  smm-server:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+    container_name: smm-server
+    env_file:
+      - ./server/.env
+    ports:
+      - "3001:3001"
+    restart: unless-stopped
+    networks:
+      - n8n-docker_default
+
+  smm-client:
+    build:
+      context: .
+      dockerfile: Dockerfile.client
+    container_name: smm-client
+    ports:
+      - "8085:80"
+    restart: unless-stopped
+    networks:
+      - n8n-docker_default
+
+networks:
+  n8n-docker_default:
+    external: true

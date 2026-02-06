@@ -1,4 +1,4 @@
-﻿import { useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "../lib/api";
 import {
   Card,
@@ -14,7 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "../components/ui/table";
-import type { QualityService, SummaryStats } from "../lib/types";
+import type { OverviewStats, QualityService } from "../lib/types";
 
 type BalanceItem = {
   code: string;
@@ -22,10 +22,16 @@ type BalanceItem = {
   balance_status: "ok" | "error";
 };
 
+const currencyFormatter = new Intl.NumberFormat("th-TH", {
+  style: "currency",
+  currency: "THB",
+  maximumFractionDigits: 0,
+});
+
 export function Dashboard() {
-  const summaryQuery = useQuery({
-    queryKey: ["summary"],
-    queryFn: () => apiFetch<SummaryStats>("/api/stats/summary"),
+  const overviewQuery = useQuery({
+    queryKey: ["overview"],
+    queryFn: () => apiFetch<OverviewStats>("/api/stats/overview"),
   });
 
   const qualityQuery = useQuery({
@@ -38,10 +44,31 @@ export function Dashboard() {
     queryFn: () => apiFetch<BalanceItem[]>("/api/providers/balances"),
   });
 
-  const summary = summaryQuery.data ?? {
-    totalToday: 0,
-    pendingQueue: 0,
-    refillRequests: 0,
+  const overview = overviewQuery.data ?? {
+    today: {
+      revenue: 0,
+      expense: 0,
+      net: 0,
+      newUsers: 0,
+      refillCount: 0,
+      topRefillServices: [],
+    },
+    week: {
+      revenue: 0,
+      expense: 0,
+      net: 0,
+      newUsers: 0,
+      refillCount: 0,
+      topRefillServices: [],
+    },
+    month: {
+      revenue: 0,
+      expense: 0,
+      net: 0,
+      newUsers: 0,
+      refillCount: 0,
+      topRefillServices: [],
+    },
   };
 
   const lowBalances =
@@ -49,48 +76,85 @@ export function Dashboard() {
       (item) => item.balance_status === "ok" && item.balance !== null && item.balance < 2
     ) ?? [];
 
+  const periods = [
+    { key: "today", label: "Today" },
+    { key: "week", label: "This Week" },
+    { key: "month", label: "This Month" },
+  ] as const;
+
   return (
     <div className="space-y-8">
-      <section className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>Total Orders Today</CardTitle>
-            <p className="text-xs uppercase tracking-[0.3em] text-slate-500">
-              Live feed
-            </p>
-          </CardHeader>
-          <CardContent>
-            <p className="font-mono text-3xl font-semibold">
-              {summary.totalToday.toLocaleString()}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Pending Queue</CardTitle>
-            <p className="text-xs uppercase tracking-[0.3em] text-slate-500">
-              Worker backlog
-            </p>
-          </CardHeader>
-          <CardContent>
-            <p className="font-mono text-3xl font-semibold">
-              {summary.pendingQueue.toLocaleString()}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Refill Requests</CardTitle>
-            <p className="text-xs uppercase tracking-[0.3em] text-slate-500">
-              Last 24 hours
-            </p>
-          </CardHeader>
-          <CardContent>
-            <p className="font-mono text-3xl font-semibold">
-              {summary.refillRequests.toLocaleString()}
-            </p>
-          </CardContent>
-        </Card>
+      <section className="grid gap-4 lg:grid-cols-3">
+        {periods.map((period) => {
+          const data = overview[period.key];
+          return (
+            <Card key={period.key}>
+              <CardHeader>
+                <CardTitle>{period.label}</CardTitle>
+                <p className="text-xs uppercase tracking-[0.3em] text-slate-500">
+                  Asia/Bangkok
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <StatRow
+                  label="Revenue"
+                  value={currencyFormatter.format(data.revenue)}
+                />
+                <StatRow
+                  label="Expense"
+                  value={currencyFormatter.format(data.expense)}
+                />
+                <StatRow
+                  label="Net Profit"
+                  value={currencyFormatter.format(data.net)}
+                  tone={data.net >= 0 ? "success" : "danger"}
+                />
+                <StatRow
+                  label="New Users"
+                  value={data.newUsers.toLocaleString()}
+                />
+                <StatRow
+                  label="Refill Count"
+                  value={data.refillCount.toLocaleString()}
+                />
+              </CardContent>
+            </Card>
+          );
+        })}
+      </section>
+
+      <section className="grid gap-4 lg:grid-cols-3">
+        {periods.map((period) => {
+          const data = overview[period.key];
+          return (
+            <Card key={`${period.key}-refill`}>
+              <CardHeader>
+                <CardTitle>Top Refill Services</CardTitle>
+                <p className="text-xs uppercase tracking-[0.3em] text-slate-500">
+                  {period.label}
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {data.topRefillServices.length ? (
+                  data.topRefillServices.map((service) => (
+                    <div
+                      key={service.service_id}
+                      className="flex items-center justify-between rounded-md border border-slate-800/60 px-3 py-2 text-sm light:border-slate-200"
+                    >
+                      <span className="font-medium">{service.service_name}</span>
+                      <span className="font-mono">{service.count}</span>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-slate-400">No refill activity.</p>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })}
+      </section>
+
+      <section className="grid gap-4 lg:grid-cols-3">
         <Card>
           <CardHeader>
             <CardTitle>Low Provider Balance</CardTitle>
@@ -134,9 +198,7 @@ export function Dashboard() {
                 <TableCell className="font-mono">{service.id}</TableCell>
                 <TableCell>{service.name}</TableCell>
                 <TableCell>{service.providerCode ?? "-"}</TableCell>
-                <TableCell className="font-mono">
-                  {service.totalOrders}
-                </TableCell>
+                <TableCell className="font-mono">{service.totalOrders}</TableCell>
                 <TableCell className="font-mono text-amber-300">
                   {(service.refillRate * 100).toFixed(1)}%
                 </TableCell>
@@ -152,6 +214,29 @@ export function Dashboard() {
           </TableBody>
         </Table>
       </section>
+    </div>
+  );
+}
+
+function StatRow({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: string;
+  tone?: "success" | "danger";
+}) {
+  const toneClass =
+    tone === "success"
+      ? "text-emerald-300"
+      : tone === "danger"
+        ? "text-rose-300"
+        : "text-slate-200";
+  return (
+    <div className="flex items-center justify-between text-sm">
+      <span className="text-slate-400 light:text-slate-600">{label}</span>
+      <span className={`font-mono ${toneClass} light:text-slate-800`}>{value}</span>
     </div>
   );
 }

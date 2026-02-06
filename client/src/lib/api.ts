@@ -1,18 +1,20 @@
-﻿import {
+import {
   getMockOrders,
   getMockProviders,
   getMockQuality,
   getMockServices,
   getMockSummary,
+  getMockOverview,
   getMockUsers,
 } from "./mock";
+import { clearAuthToken, getAuthToken } from "./auth";
 
 const baseUrl = import.meta.env.VITE_API_URL ?? "http://localhost:3001";
 const mockMode = import.meta.env.VITE_MOCK_MODE === "true";
-const adminUser = import.meta.env.VITE_ADMIN_USER;
-const adminPass = import.meta.env.VITE_ADMIN_PASS;
 
-type FetchOptions = RequestInit & { query?: Record<string, string | number | undefined> };
+type FetchOptions = RequestInit & {
+  query?: Record<string, string | number | undefined>;
+};
 
 export async function apiFetch<T>(path: string, options: FetchOptions = {}) {
   if (mockMode) {
@@ -20,8 +22,14 @@ export async function apiFetch<T>(path: string, options: FetchOptions = {}) {
     if (path.startsWith("/api/stats/summary")) {
       return getMockSummary() as T;
     }
+    if (path.startsWith("/api/stats/overview")) {
+      return getMockOverview() as T;
+    }
     if (path.startsWith("/api/stats/quality")) {
       return getMockQuality() as T;
+    }
+    if (path.startsWith("/api/auth/login")) {
+      return { token: "mock-token" } as T;
     }
     if (path.startsWith("/api/orders/bulk")) {
       const count = Array.isArray(options.body)
@@ -85,14 +93,15 @@ export async function apiFetch<T>(path: string, options: FetchOptions = {}) {
     ...options,
     headers: {
       "Content-Type": "application/json",
-      ...(adminUser && adminPass
-        ? { Authorization: `Basic ${btoa(`${adminUser}:${adminPass}`)}` }
-        : {}),
+      ...(getAuthToken() ? { Authorization: `Bearer ${getAuthToken()}` } : {}),
       ...(options.headers ?? {}),
     },
   });
 
   if (!res.ok) {
+    if (res.status === 401) {
+      clearAuthToken();
+    }
     const message = await res.text();
     throw new Error(message || "Request failed");
   }

@@ -1,5 +1,6 @@
-﻿import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
+import { X } from "lucide-react";
 import { OrdersTable } from "../features/orders/OrdersTable";
 import { apiFetch } from "../lib/api";
 import type { Service } from "../lib/types";
@@ -254,7 +255,7 @@ export function OrdersPage() {
                 className="grid gap-3 rounded-lg border border-slate-800/60 p-3 light:border-slate-200"
               >
                 <div className="grid gap-3 lg:grid-cols-[1.2fr_1.6fr_auto]">
-                  <div>
+                  <div className="flex items-center gap-2">
                     <Input
                       placeholder="Service (type to search)"
                       list="service-list"
@@ -267,7 +268,18 @@ export function OrdersPage() {
                           service_id: Number.isNaN(id) ? "" : id,
                         });
                       }}
+                      className="flex-1"
                     />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() =>
+                        updateDraft(index, { service_pick: "", service_id: "" })
+                      }
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
                   </div>
                   <Input
                     placeholder="Link URL"
@@ -275,6 +287,11 @@ export function OrdersPage() {
                     onChange={(event) =>
                       updateDraft(index, { link: event.target.value })
                     }
+                    onBlur={(event) => {
+                      const value = event.target.value.trim();
+                      const cleaned = value.split("?")[0];
+                      updateDraft(index, { link: cleaned });
+                    }}
                   />
                   <label className="flex items-center gap-2 rounded-md border border-slate-800/60 px-3 py-2 text-xs light:border-slate-200">
                     <input
@@ -487,6 +504,7 @@ function buildCustomerMessage(input: {
     day: "numeric",
     month: "long",
     year: "numeric",
+    timeZone: "Asia/Bangkok",
   });
   return `ขอบคุณสำหรับคำสั่งซื้อค่ะ 💓\n\n📌 สรุปรายการสั่งซื้อ\nเลขออเดอร์: ${input.orderId ?? "-"}\nบริการ: ${input.serviceName}\nลิงก์: ${input.link}\nยอดเริ่มต้น: ${input.startCount}\nยอดสั่งซื้อ: ${input.quantity}\nยอดที่ต้องได้: ${input.target}\n\n⏰ ระยะเวลาดำเนินการ: 1-24 ชั่วโมง\nหากเกิน 24 ชั่วโมงแล้วยอดยังไม่เปลี่ยนแปลง สามารถติดต่อทางร้านได้เลยค่ะ\n\n⚠️ ข้อควรระวังระหว่างดำเนินการ\n- ห้ามเปลี่ยนชื่อแอคเคาท์\n- ห้ามล็อกแอคเคาท์เป็นส่วนตัว\n\n🛡️ การรับประกัน\nทางร้านรับประกัน 30 วัน (หมดอายุ: ${formatter.format(expire)})\nหากยอดลดลงต่ำกว่า ${input.safety} สามารถแจ้งขอรีฟิลได้ทันทีค่ะ\n\nขอบคุณที่ใช้บริการค่ะ 💖`;
 }

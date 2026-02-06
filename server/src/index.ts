@@ -10,27 +10,49 @@ const app = new Hono();
 
 const adminUser = process.env.ADMIN_USER;
 const adminPass = process.env.ADMIN_PASS;
+const sessionTokens = new Set<string>();
 
 app.use("/api/*", cors({ origin: "*" }));
 
-if (adminUser && adminPass) {
-  app.use("/api/*", async (c, next) => {
-    const auth = c.req.header("Authorization");
-    if (!auth || !auth.startsWith("Basic ")) {
-      return c.text("Unauthorized", 401, {
-        "WWW-Authenticate": "Basic realm=\"Admin\"",
-      });
-    }
-    const decoded = Buffer.from(auth.replace("Basic ", ""), "base64").toString();
-    const [user, pass] = decoded.split(":");
-    if (user !== adminUser || pass !== adminPass) {
-      return c.text("Unauthorized", 401, {
-        "WWW-Authenticate": "Basic realm=\"Admin\"",
-      });
-    }
+app.post("/api/auth/login", async (c) => {
+  if (!adminUser || !adminPass) {
+    return c.json({ error: "Admin credentials not configured." }, 500);
+  }
+  const { username, password } = (await c.req.json()) as {
+    username?: string;
+    password?: string;
+  };
+  if (username !== adminUser || password !== adminPass) {
+    return c.json({ error: "Invalid credentials" }, 401);
+  }
+  const token = crypto.randomUUID();
+  sessionTokens.add(token);
+  return c.json({ token });
+});
+
+app.post("/api/auth/logout", async (c) => {
+  const auth = c.req.header("Authorization");
+  if (auth?.startsWith("Bearer ")) {
+    sessionTokens.delete(auth.replace("Bearer ", ""));
+  }
+  return c.json({ success: true });
+});
+
+app.use("/api/*", async (c, next) => {
+  if (c.req.path.startsWith("/api/auth/")) {
     await next();
-  });
-}
+    return;
+  }
+  const auth = c.req.header("Authorization");
+  if (!auth || !auth.startsWith("Bearer ")) {
+    return c.text("Unauthorized", 401);
+  }
+  const token = auth.replace("Bearer ", "");
+  if (!sessionTokens.has(token)) {
+    return c.text("Unauthorized", 401);
+  }
+  await next();
+});
 
 app.get("/", (c) => c.json({ ok: true }));
 

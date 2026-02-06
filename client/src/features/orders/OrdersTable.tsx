@@ -1,4 +1,4 @@
-﻿import { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   flexRender,
@@ -56,6 +56,39 @@ function statusVariant(status: OrderStatus) {
     default:
       return "warning";
   }
+}
+
+const bangkokFormatter = new Intl.DateTimeFormat("th-TH", {
+  dateStyle: "medium",
+  timeStyle: "short",
+  timeZone: "Asia/Bangkok",
+});
+
+function formatBangkok(value: string) {
+  return bangkokFormatter.format(new Date(value));
+}
+
+function isRefillRemark(remark?: string | null) {
+  return !!remark && /refill|refil/i.test(remark);
+}
+
+function isOlderThan30Days(createdAt: string) {
+  const created = new Date(createdAt).getTime();
+  return Date.now() - created > 30 * 24 * 60 * 60 * 1000;
+}
+
+function getActionDisableReason(order: Order) {
+  if (isRefillRemark(order.remark)) {
+    return "Disabled for refill orders.";
+  }
+  if (isOlderThan30Days(order.created_at)) {
+    return "Disabled after 30 days.";
+  }
+  return "";
+}
+
+function isActionDisabled(order: Order) {
+  return isRefillRemark(order.remark) || isOlderThan30Days(order.created_at);
 }
 
 type OrdersQuery = {
@@ -139,7 +172,6 @@ export function OrdersTable() {
         method: "POST",
         body: JSON.stringify(payload),
       }),
-    // onSuccess: () => queryClient.invalidateQueries({ queryKey: ["orders"] }),
     onSuccess: (data) => {
       const message =
         (data as { message?: string })?.message ?? "Resubmit sent.";
@@ -198,7 +230,7 @@ export function OrdersTable() {
         accessorKey: "created_at",
         cell: ({ row }) => (
           <span className="text-xs text-slate-400 light:text-slate-600">
-            {new Date(row.original.created_at).toLocaleString()}
+            {formatBangkok(row.original.created_at)}
           </span>
         ),
       },
@@ -262,35 +294,43 @@ export function OrdersTable() {
       {
         id: "actions",
         header: "",
-        cell: ({ row }) => (
-          <div className="flex items-center justify-end gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                setEditTarget(row.original);
-                setEditStatus(row.original.status);
-                setEditRemark(row.original.remark ?? "");
-              }}
-            >
-              Edit
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setRefillTarget(row.original)}
-            >
-              Refill
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setResubmitTarget(row.original)}
-            >
-              Resubmit
-            </Button>
-          </div>
-        ),
+        cell: ({ row }) => {
+          const disabled = isActionDisabled(row.original);
+          const reason = getActionDisableReason(row.original);
+          return (
+            <div className="flex items-center justify-end gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setEditTarget(row.original);
+                  setEditStatus(row.original.status);
+                  setEditRemark(row.original.remark ?? "");
+                }}
+              >
+                Edit
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={disabled}
+                title={disabled ? reason : undefined}
+                onClick={() => setRefillTarget(row.original)}
+              >
+                Refill
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={disabled}
+                title={disabled ? reason : undefined}
+                onClick={() => setResubmitTarget(row.original)}
+              >
+                Resubmit
+              </Button>
+            </div>
+          );
+        },
       },
     ],
     [],
@@ -466,6 +506,8 @@ export function OrdersTable() {
       <div className="space-y-3 sm:hidden">
         {ordersQuery.data?.data.map((order) => {
           const isExpanded = expandedIds.has(order.id);
+          const disabled = isActionDisabled(order);
+          const reason = getActionDisableReason(order);
           return (
             <div
               key={order.id}
@@ -480,7 +522,7 @@ export function OrdersTable() {
                     {order.service_name}
                   </p>
                   <p className="mt-1 text-xs text-slate-500">
-                    {new Date(order.created_at).toLocaleString()}
+                    {formatBangkok(order.created_at)}
                   </p>
                 </div>
                 <Badge variant={statusVariant(order.status)}>
@@ -540,6 +582,8 @@ export function OrdersTable() {
                 <Button
                   size="sm"
                   variant="outline"
+                  disabled={disabled}
+                  title={disabled ? reason : undefined}
                   onClick={() => setRefillTarget(order)}
                 >
                   Refill
@@ -547,6 +591,8 @@ export function OrdersTable() {
                 <Button
                   size="sm"
                   variant="outline"
+                  disabled={disabled}
+                  title={disabled ? reason : undefined}
                   onClick={() => setResubmitTarget(order)}
                 >
                   Resubmit

@@ -1,4 +1,4 @@
-﻿import { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "../lib/api";
 import type { Service } from "../lib/types";
@@ -38,6 +38,7 @@ const emptyDraft: ServiceDraft = {
   provider_code: "",
   provider_service_id: null,
   backup_service_id: null,
+  refill_service_id: null,
   min_qty: 0,
   max_qty: 0,
   cost_price: 0,
@@ -52,6 +53,7 @@ type ServiceDraft = {
   provider_code: string;
   provider_service_id: number | null;
   backup_service_id: number | null;
+  refill_service_id: number | null;
   min_qty: number | null;
   max_qty: number | null;
   cost_price: number | null;
@@ -144,7 +146,11 @@ export function ServicesPage() {
                   {service.provider_code ?? "-"}
                 </p>
               </div>
-              <Button variant="outline" size="sm" onClick={() => setDetailsTarget(service)}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setDetailsTarget(service)}
+              >
                 Details
               </Button>
             </div>
@@ -167,7 +173,11 @@ export function ServicesPage() {
               <Button size="sm" variant="outline" onClick={() => openEdit(service)}>
                 Edit
               </Button>
-              <Button size="sm" variant="outline" onClick={() => openDuplicate(service)}>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => openDuplicate(service)}
+              >
                 Duplicate
               </Button>
             </div>
@@ -182,65 +192,65 @@ export function ServicesPage() {
 
       <div className="hidden sm:block">
         <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>ID</TableHead>
-            <TableHead>Name</TableHead>
-            <TableHead>Provider</TableHead>
-            <TableHead>Price</TableHead>
-            <TableHead>Active</TableHead>
-            <TableHead></TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {services.map((service) => (
-            <TableRow key={service.id}>
-              <TableCell className="font-mono">{service.id}</TableCell>
-              <TableCell className="font-medium">{service.name}</TableCell>
-              <TableCell className="text-sm text-slate-400 light:text-slate-600">
-                {service.provider_code ?? "-"}
-              </TableCell>
-              <TableCell className="font-mono">
-                {Number(service.price ?? 0).toFixed(2)}
-              </TableCell>
-              <TableCell>
-                <Switch
-                  checked={!!service.is_active}
-                  onCheckedChange={(value) =>
-                    updateMutation.mutate({ id: service.id, is_active: value })
-                  }
-                />
-              </TableCell>
-              <TableCell className="text-right">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => setDetailsTarget(service)}>
-                      View Details
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => openEdit(service)}>
-                      Edit
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => openDuplicate(service)}>
-                      Duplicate
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </TableCell>
-            </TableRow>
-          ))}
-          {!services.length && (
+          <TableHeader>
             <TableRow>
-              <TableCell colSpan={6} className="text-center text-slate-400">
-                No services found.
-              </TableCell>
+              <TableHead>ID</TableHead>
+              <TableHead>Name</TableHead>
+              <TableHead>Provider</TableHead>
+              <TableHead>Price</TableHead>
+              <TableHead>Active</TableHead>
+              <TableHead></TableHead>
             </TableRow>
-          )}
-        </TableBody>
+          </TableHeader>
+          <TableBody>
+            {services.map((service) => (
+              <TableRow key={service.id}>
+                <TableCell className="font-mono">{service.id}</TableCell>
+                <TableCell className="font-medium">{service.name}</TableCell>
+                <TableCell className="text-sm text-slate-400 light:text-slate-600">
+                  {service.provider_code ?? "-"}
+                </TableCell>
+                <TableCell className="font-mono">
+                  {Number(service.price ?? 0).toFixed(2)}
+                </TableCell>
+                <TableCell>
+                  <Switch
+                    checked={!!service.is_active}
+                    onCheckedChange={(value) =>
+                      updateMutation.mutate({ id: service.id, is_active: value })
+                    }
+                  />
+                </TableCell>
+                <TableCell className="text-right">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => setDetailsTarget(service)}>
+                        View Details
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => openEdit(service)}>
+                        Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => openDuplicate(service)}>
+                        Duplicate
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableCell>
+              </TableRow>
+            ))}
+            {!services.length && (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center text-slate-400">
+                  No services found.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
         </Table>
       </div>
 
@@ -358,20 +368,35 @@ export function ServicesPage() {
                 }
               />
             </div>
-            <Input
-              placeholder="Backup Service ID"
-              type="number"
-              value={draft.backup_service_id ?? ""}
-              onChange={(event) =>
-                setDraft((prev) => ({
-                  ...prev,
-                  backup_service_id: event.target.value
-                    ? Number(event.target.value)
-                    : null,
-                }))
-              }
-              list="backup-services"
-            />
+            <div className="grid grid-cols-2 gap-3">
+              <Input
+                placeholder="Backup Service ID"
+                type="number"
+                value={draft.backup_service_id ?? ""}
+                onChange={(event) =>
+                  setDraft((prev) => ({
+                    ...prev,
+                    backup_service_id: event.target.value
+                      ? Number(event.target.value)
+                      : null,
+                  }))
+                }
+                list="backup-services"
+              />
+              <Input
+                placeholder="Refill Service ID"
+                type="number"
+                value={draft.refill_service_id ?? ""}
+                onChange={(event) =>
+                  setDraft((prev) => ({
+                    ...prev,
+                    refill_service_id: event.target.value
+                      ? Number(event.target.value)
+                      : null,
+                  }))
+                }
+              />
+            </div>
             <datalist id="backup-services">
               {backupOptions.map((id) => (
                 <option key={id} value={id} />
@@ -427,10 +452,7 @@ export function ServicesPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog
-        open={!!detailsTarget}
-        onOpenChange={() => setDetailsTarget(null)}
-      >
+      <Dialog open={!!detailsTarget} onOpenChange={() => setDetailsTarget(null)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Service Details</DialogTitle>
@@ -451,6 +473,10 @@ export function ServicesPage() {
             <DetailRow
               label="Backup Service"
               value={detailsTarget?.backup_service_id ?? "-"}
+            />
+            <DetailRow
+              label="Refill Service"
+              value={detailsTarget?.refill_service_id ?? "-"}
             />
             <DetailRow label="Min Qty" value={detailsTarget?.min_qty ?? "-"} />
             <DetailRow label="Max Qty" value={detailsTarget?.max_qty ?? "-"} />
@@ -503,6 +529,7 @@ function mapServiceToDraft(service: Service): ServiceDraft {
     provider_code: service.provider_code ?? "",
     provider_service_id: service.provider_service_id ?? null,
     backup_service_id: service.backup_service_id ?? null,
+    refill_service_id: service.refill_service_id ?? null,
     min_qty: service.min_qty ?? null,
     max_qty: service.max_qty ?? null,
     cost_price: service.cost_price ?? null,

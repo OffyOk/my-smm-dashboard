@@ -1,9 +1,13 @@
-﻿import { Bell, Menu, Search } from "lucide-react";
+import { Bell, Menu, Search, LogOut } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { ThemeToggle } from "../theme-toggle";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
+import { clearAuthToken } from "../../lib/auth";
 
 export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
+  const navigate = useNavigate();
+
   return (
     <header className="flex items-center justify-between gap-4 border-b border-slate-800/60 bg-panel-950/80 px-6 py-4 backdrop-blur light:border-slate-200 light:bg-white/80">
       <div>
@@ -31,6 +35,17 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
           <Bell className="h-4 w-4" />
         </Button>
         <ThemeToggle />
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            clearAuthToken();
+            navigate("/login", { replace: true });
+          }}
+        >
+          <LogOut className="mr-2 h-4 w-4" />
+          Logout
+        </Button>
       </div>
     </header>
   );

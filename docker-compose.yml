@@ -23,6 +23,7 @@ services:
     networks:
       - n8n-docker_default
 
+
 networks:
   n8n-docker_default:
     external: true

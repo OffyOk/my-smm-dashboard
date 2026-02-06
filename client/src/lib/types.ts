@@ -26,6 +26,21 @@ export type SummaryStats = {
   refillRequests: number;
 };
 
+export type OverviewStats = {
+  today: PeriodStats;
+  week: PeriodStats;
+  month: PeriodStats;
+};
+
+export type PeriodStats = {
+  revenue: number;
+  expense: number;
+  net: number;
+  newUsers: number;
+  refillCount: number;
+  topRefillServices: { service_id: number; service_name: string; count: number }[];
+};
+
 export type QualityService = {
   id: number;
   name: string;
@@ -42,6 +57,7 @@ export type Service = {
   provider_code: string | null;
   provider_service_id?: number | null;
   backup_service_id?: number | null;
+  refill_service_id?: number | null;
   min_qty?: number | null;
   max_qty?: number | null;
   cost_price?: number | null;

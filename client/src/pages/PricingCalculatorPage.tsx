@@ -514,6 +514,7 @@ export function PricingCalculatorPage() {
                       type="number"
                       placeholder="จำนวน"
                       value={item.quantity}
+                      onFocus={(event) => event.target.select()}
                       onChange={(event) =>
                         updateItem(index, {
                           quantity: Number(event.target.value),

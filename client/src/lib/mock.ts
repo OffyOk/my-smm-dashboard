@@ -1,4 +1,13 @@
-﻿import type { Order, OrdersResponse, QualityService, SummaryStats, Service, Provider, OrderStatus } from "./types";
+import type {
+  Order,
+  OrdersResponse,
+  QualityService,
+  SummaryStats,
+  Service,
+  Provider,
+  OrderStatus,
+  OverviewStats,
+} from "./types";
 
 type OrdersQuery = {
   page?: number;
@@ -35,6 +44,44 @@ const mockSummary: SummaryStats = {
   refillRequests: 19,
 };
 
+const mockOverview: OverviewStats = {
+  today: {
+    revenue: 12500,
+    expense: 7200,
+    net: 5300,
+    newUsers: 12,
+    refillCount: 4,
+    topRefillServices: [
+      { service_id: 101, service_name: "Instagram Followers - HQ", count: 3 },
+      { service_id: 208, service_name: "TikTok Views - Turbo", count: 1 },
+    ],
+  },
+  week: {
+    revenue: 85400,
+    expense: 49300,
+    net: 36100,
+    newUsers: 61,
+    refillCount: 22,
+    topRefillServices: [
+      { service_id: 101, service_name: "Instagram Followers - HQ", count: 11 },
+      { service_id: 322, service_name: "YouTube Likes - Drip", count: 7 },
+      { service_id: 208, service_name: "TikTok Views - Turbo", count: 4 },
+    ],
+  },
+  month: {
+    revenue: 321000,
+    expense: 182500,
+    net: 138500,
+    newUsers: 240,
+    refillCount: 88,
+    topRefillServices: [
+      { service_id: 101, service_name: "Instagram Followers - HQ", count: 40 },
+      { service_id: 208, service_name: "TikTok Views - Turbo", count: 28 },
+      { service_id: 322, service_name: "YouTube Likes - Drip", count: 20 },
+    ],
+  },
+};
+
 const mockQuality: QualityService[] = [
   {
     id: 101,
@@ -68,6 +115,7 @@ const mockServices: Service[] = [
     provider_code: "SMM-KING",
     provider_service_id: 9901,
     backup_service_id: 208,
+    refill_service_id: 999,
     min_qty: 100,
     max_qty: 10000,
     cost_price: 2.1,
@@ -81,6 +129,7 @@ const mockServices: Service[] = [
     provider_code: "BOOSTHUB",
     provider_service_id: 8812,
     backup_service_id: 322,
+    refill_service_id: 888,
     min_qty: 500,
     max_qty: 200000,
     cost_price: 0.9,
@@ -94,6 +143,7 @@ const mockServices: Service[] = [
     provider_code: "VIRALPRO",
     provider_service_id: 7711,
     backup_service_id: null,
+    refill_service_id: null,
     min_qty: 50,
     max_qty: 50000,
     cost_price: 0.4,
@@ -109,6 +159,10 @@ const mockProviders: Provider[] = [
 
 export function getMockSummary(): SummaryStats {
   return mockSummary;
+}
+
+export function getMockOverview(): OverviewStats {
+  return mockOverview;
 }
 
 export function getMockQuality(): QualityService[] {

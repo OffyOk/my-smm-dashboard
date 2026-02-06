@@ -117,6 +117,7 @@ export function OrdersTable() {
   const [newServiceId, setNewServiceId] = useState("");
   const [newStartCount, setNewStartCount] = useState("");
   const [refillCurrentCount, setRefillCurrentCount] = useState("");
+  const [refillLink, setRefillLink] = useState("");
   const [expandedIds, setExpandedIds] = useState<Set<number>>(() => new Set());
 
   const ordersQuery = useQuery({
@@ -136,10 +137,17 @@ export function OrdersTable() {
   });
 
   const refillMutation = useMutation({
-    mutationFn: async (payload: { orderId: number; current_count?: number }) =>
+    mutationFn: async (payload: {
+      orderId: number;
+      current_count?: number;
+      link?: string;
+    }) =>
       apiFetch(`/api/orders/${payload.orderId}/refill`, {
         method: "POST",
-        body: JSON.stringify({ current_count: payload.current_count }),
+        body: JSON.stringify({
+          current_count: payload.current_count,
+          link: payload.link,
+        }),
       }),
     onSuccess: (data) => {
       const message = (data as { message?: string })?.message ?? "Refill sent.";
@@ -698,6 +706,7 @@ export function OrdersTable() {
         onOpenChange={() => {
           setRefillTarget(null);
           setRefillCurrentCount("");
+          setRefillLink("");
         }}
       >
         <DialogContent>
@@ -718,6 +727,11 @@ export function OrdersTable() {
               value={refillCurrentCount}
               onChange={(event) => setRefillCurrentCount(event.target.value)}
             />
+            <Input
+              placeholder="New Link (optional)"
+              value={refillLink}
+              onChange={(event) => setRefillLink(event.target.value)}
+            />
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setRefillTarget(null)}>
@@ -731,9 +745,11 @@ export function OrdersTable() {
                     current_count: refillCurrentCount
                       ? Number(refillCurrentCount)
                       : undefined,
+                    link: refillLink.trim() ? refillLink.trim() : undefined,
                   });
                   setRefillTarget(null);
                   setRefillCurrentCount("");
+                  setRefillLink("");
                 }
               }}
             >

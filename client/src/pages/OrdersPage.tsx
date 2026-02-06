@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { X } from "lucide-react";
 import { OrdersTable } from "../features/orders/OrdersTable";
 import { apiFetch } from "../lib/api";
-import type { Service } from "../lib/types";
+import type { Service, User } from "../lib/types";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import {
@@ -16,6 +16,8 @@ import {
 } from "../components/ui/dialog";
 
 type NewOrderDraft = {
+  user_id: number | "";
+  user_pick: string;
   service_id: number | "";
   service_pick: string;
   link: string;
@@ -23,6 +25,7 @@ type NewOrderDraft = {
   start_count: number | "";
   custom_price: number | null;
   wait_for_prev: boolean;
+  remark: string;
 };
 
 type ConfirmationItem = {
@@ -36,6 +39,8 @@ type RefillDraft = {
 };
 
 const emptyDraft: NewOrderDraft = {
+  user_id: "",
+  user_pick: "",
   service_id: "",
   service_pick: "",
   link: "",
@@ -43,6 +48,7 @@ const emptyDraft: NewOrderDraft = {
   start_count: "",
   custom_price: null,
   wait_for_prev: false,
+  remark: "Original",
 };
 
 const emptyRefill: RefillDraft = {
@@ -63,6 +69,11 @@ export function OrdersPage() {
     queryFn: () => apiFetch<Service[]>("/api/services"),
   });
 
+  const usersQuery = useQuery({
+    queryKey: ["users"],
+    queryFn: () => apiFetch<User[]>("/api/users"),
+  });
+
   const serviceMap = useMemo(() => {
     const map = new Map<number, string>();
     (servicesQuery.data ?? []).forEach((service) => {
@@ -77,6 +88,14 @@ export function OrdersPage() {
         (service) => `${service.id} | ${service.name}`,
       ),
     [servicesQuery.data],
+  );
+
+  const userOptions = useMemo(
+    () =>
+      (usersQuery.data ?? []).map((user) =>
+        `${user.id} | ${user.username ?? "-"} | ${user.platform_user_id}`.trim()
+      ),
+    [usersQuery.data],
   );
 
   const createOrders = useMutation({
@@ -149,6 +168,7 @@ export function OrdersPage() {
     createOrders.mutate({
       orders: cleaned.map((d) => ({
         ...d,
+        user_id: d.user_id === "" ? undefined : Number(d.user_id),
         service_id: Number(d.service_id),
         quantity: Number(d.quantity),
         start_count: d.start_count === "" ? 0 : Number(d.start_count),
@@ -156,7 +176,7 @@ export function OrdersPage() {
           d.custom_price === null || d.custom_price === undefined
             ? null
             : Number(d.custom_price),
-        remark: "Original",
+        remark: d.remark?.trim() || "Original",
       })),
     });
     setDialogOpen(false);
@@ -345,6 +365,28 @@ export function OrdersPage() {
                     }
                   />
                 </div>
+                <div className="grid gap-3 md:grid-cols-2">
+                  <Input
+                    placeholder="User (type to search)"
+                    list="user-list"
+                    value={draft.user_pick}
+                    onChange={(event) => {
+                      const value = event.target.value;
+                      const id = Number(value.split("|")[0]?.trim());
+                      updateDraft(index, {
+                        user_pick: value,
+                        user_id: Number.isNaN(id) ? "" : id,
+                      });
+                    }}
+                  />
+                  <Input
+                    placeholder="Remark"
+                    value={draft.remark}
+                    onChange={(event) =>
+                      updateDraft(index, { remark: event.target.value })
+                    }
+                  />
+                </div>
                 {drafts.length > 1 && (
                   <Button
                     variant="outline"
@@ -358,6 +400,11 @@ export function OrdersPage() {
             ))}
             <datalist id="service-list">
               {serviceOptions.map((option) => (
+                <option key={option} value={option} />
+              ))}
+            </datalist>
+            <datalist id="user-list">
+              {userOptions.map((option) => (
                 <option key={option} value={option} />
               ))}
             </datalist>
@@ -394,7 +441,7 @@ export function OrdersPage() {
                 <textarea
                   value={item.message}
                   readOnly
-                  className="min-h-[220px]"
+                  className="min-h-[220px] w-full rounded-md border border-slate-800/60 bg-slate-950/60 p-3 text-sm text-slate-100 light:border-slate-200 light:bg-white light:text-slate-900"
                 />
                 <Button
                   variant="outline"

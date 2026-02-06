@@ -23,11 +23,15 @@ function RequireAuth() {
 
 function MainLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   return (
     <div className="flex min-h-screen bg-panel-950 text-slate-100 light:bg-slate-50 light:text-slate-900">
       <div className="hidden lg:flex">
-        <Sidebar />
+        <Sidebar
+          collapsed={sidebarCollapsed}
+          onToggle={() => setSidebarCollapsed((prev) => !prev)}
+        />
       </div>
 
       {sidebarOpen && (

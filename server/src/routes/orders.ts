@@ -82,6 +82,7 @@ ordersRoutes.get("/", zValidator("query", listQuerySchema), async (c) => {
 const refillSchema = z
   .object({
     current_count: z.number().optional(),
+    link: z.string().optional(),
   })
   .optional();
 
@@ -115,6 +116,7 @@ ordersRoutes.post("/:id/refill", zValidator("json", refillSchema), async (c) => 
     body: JSON.stringify({
       order_id: order.id,
       current_count: payload.current_count ?? order.start_count,
+      link: payload.link ?? order.link,
     }),
   });
 
@@ -195,6 +197,7 @@ ordersRoutes.patch("/:id", zValidator("json", patchSchema), async (c) => {
 const bulkSchema = z.object({
   orders: z.array(
     z.object({
+      user_id: z.number().optional(),
       service_id: z.number(),
       link: z.string(),
       quantity: z.number(),

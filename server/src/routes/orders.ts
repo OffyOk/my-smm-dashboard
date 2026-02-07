@@ -3,9 +3,30 @@ import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
 import { and, desc, eq, gte, ilike, lte, or, sql } from "drizzle-orm";
 import { db } from "../db";
-import { orders, providers, services } from "../db/schema";
+import { orders, providers, services, users } from "../db/schema";
 
 export const ordersRoutes = new Hono();
+
+const BANGKOK_OFFSET_MS = 7 * 60 * 60 * 1000;
+
+function formatUtcNoTz(date: Date) {
+  return date.toISOString().replace("T", " ").replace("Z", "").slice(0, 19);
+}
+
+function bangkokDateRangeToUtc(dateStr: string) {
+  const [year, month, day] = dateStr.split("-").map(Number);
+  if (!year || !month || !day) return null;
+  const startUtcMs =
+    Date.UTC(year, month - 1, day, 0, 0, 0) - BANGKOK_OFFSET_MS;
+  const endUtcMs =
+    Date.UTC(year, month - 1, day + 1, 0, 0, 0) -
+    BANGKOK_OFFSET_MS -
+    1;
+  return {
+    start: formatUtcNoTz(new Date(startUtcMs)),
+    end: formatUtcNoTz(new Date(endUtcMs)),
+  };
+}
 
 const listQuerySchema = z.object({
   page: z.coerce.number().min(1).default(1),
@@ -29,10 +50,16 @@ ordersRoutes.get("/", zValidator("query", listQuerySchema), async (c) => {
     filters.push(ilike(orders.remark, `%${remark}%`));
   }
   if (startDate) {
-    filters.push(gte(orders.createdAt, `${startDate}T00:00:00`));
+    const range = bangkokDateRangeToUtc(startDate);
+    if (range) {
+      filters.push(gte(orders.createdAt, range.start));
+    }
   }
   if (endDate) {
-    filters.push(lte(orders.createdAt, `${endDate}T23:59:59.999`));
+    const range = bangkokDateRangeToUtc(endDate);
+    if (range) {
+      filters.push(lte(orders.createdAt, range.end));
+    }
   }
   if (search) {
     const numeric = Number(search);
@@ -60,11 +87,14 @@ ordersRoutes.get("/", zValidator("query", listQuerySchema), async (c) => {
       provider_order_id: orders.providerOrderId,
       start_count: orders.startCount,
       remark: orders.remark,
+      user_id: orders.userId,
+      user_name: users.username,
       service_name: services.name,
       provider_code: providers.code,
     })
     .from(orders)
     .leftJoin(services, eq(orders.serviceId, services.id))
+    .leftJoin(users, eq(orders.userId, users.id))
     .leftJoin(providers, eq(services.providerCode, providers.code))
     .where(whereClause)
     .orderBy(desc(orders.createdAt))
@@ -140,6 +170,8 @@ ordersRoutes.post("/:id/refill", zValidator("json", refillSchema), async (c) => 
 const resubmitSchema = z.object({
   old_order_id: z.number(),
   new_service_id: z.number(),
+  new_start_count: z.number(),
+  user_id: z.number().optional(),
   link: z.string().url(),
   qty: z.number().min(1),
 });
@@ -159,7 +191,10 @@ ordersRoutes.post("/resubmit", zValidator("json", resubmitSchema), async (c) => 
         {
           service_id: payload.new_service_id,
           link: payload.link,
+          user_id: payload.user_id,
+          start_count: payload.new_start_count,
           quantity: payload.qty,
+          custom_price: 0,
           remark: `Resubmit from order #${payload.old_order_id}`,
         },
       ],

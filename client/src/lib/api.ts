@@ -6,6 +6,7 @@ import {
   getMockSummary,
   getMockOverview,
   getMockUsers,
+  getMockUsersResponse,
 } from "./mock";
 import { clearAuthToken, getAuthToken } from "./auth";
 
@@ -75,7 +76,12 @@ export async function apiFetch<T>(path: string, options: FetchOptions = {}) {
       return getMockProviders() as T;
     }
     if (path.startsWith("/api/users")) {
-      return getMockUsers() as T;
+      return getMockUsersResponse({
+        page: Number(options.query?.page ?? 1),
+        pageSize: Number(options.query?.pageSize ?? 20),
+        search: options.query?.search?.toString(),
+        all: options.query?.all === "true",
+      }) as T;
     }
     return { success: true } as T;
   }

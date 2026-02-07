@@ -7,40 +7,56 @@ export const statsRoutes = new Hono();
 
 const BANGKOK_OFFSET_MS = 7 * 60 * 60 * 1000;
 
-function toBangkok(date: Date) {
-  return new Date(date.getTime() + BANGKOK_OFFSET_MS);
+function formatUtcNoTz(date: Date) {
+  return date.toISOString().replace("T", " ").replace("Z", "").slice(0, 19);
 }
 
-function fromBangkok(date: Date) {
-  return new Date(date.getTime() - BANGKOK_OFFSET_MS);
+function getBangkokNowParts(nowUtcMs: number) {
+  const shifted = new Date(nowUtcMs + BANGKOK_OFFSET_MS);
+  return {
+    year: shifted.getUTCFullYear(),
+    month: shifted.getUTCMonth(),
+    day: shifted.getUTCDate(),
+    dayOfWeek: shifted.getUTCDay(),
+  };
 }
 
-function startOfDay(date: Date) {
-  const next = new Date(date);
-  next.setHours(0, 0, 0, 0);
-  return next;
+function bangkokWallClockToUtcMs(year: number, month: number, day: number) {
+  return Date.UTC(year, month, day, 0, 0, 0) - BANGKOK_OFFSET_MS;
 }
 
 function getBangkokRanges() {
-  const nowUtc = new Date();
-  const nowBangkok = toBangkok(nowUtc);
+  const nowUtcMs = Date.now();
+  const nowUtc = new Date(nowUtcMs);
+  const nowParts = getBangkokNowParts(nowUtcMs);
 
-  const todayStart = startOfDay(nowBangkok);
+  const todayStartUtcMs = bangkokWallClockToUtcMs(
+    nowParts.year,
+    nowParts.month,
+    nowParts.day
+  );
 
-  const weekStart = startOfDay(nowBangkok);
-  const day = weekStart.getDay();
-  const diff = (day + 6) % 7;
-  weekStart.setDate(weekStart.getDate() - diff);
+  const diff = (nowParts.dayOfWeek + 6) % 7;
+  const weekStartDate = new Date(
+    Date.UTC(nowParts.year, nowParts.month, nowParts.day - diff)
+  );
+  const weekStartUtcMs = bangkokWallClockToUtcMs(
+    weekStartDate.getUTCFullYear(),
+    weekStartDate.getUTCMonth(),
+    weekStartDate.getUTCDate()
+  );
 
-  const monthStart = startOfDay(
-    new Date(nowBangkok.getFullYear(), nowBangkok.getMonth(), 1)
+  const monthStartUtcMs = bangkokWallClockToUtcMs(
+    nowParts.year,
+    nowParts.month,
+    1
   );
 
   return {
-    nowUtc: nowUtc.toISOString(),
-    todayStart: fromBangkok(todayStart).toISOString(),
-    weekStart: fromBangkok(weekStart).toISOString(),
-    monthStart: fromBangkok(monthStart).toISOString(),
+    nowUtc: formatUtcNoTz(nowUtc),
+    todayStart: formatUtcNoTz(new Date(todayStartUtcMs)),
+    weekStart: formatUtcNoTz(new Date(weekStartUtcMs)),
+    monthStart: formatUtcNoTz(new Date(monthStartUtcMs)),
   };
 }
 

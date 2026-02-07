@@ -4,6 +4,7 @@ import { X } from "lucide-react";
 import { OrdersTable } from "../features/orders/OrdersTable";
 import { apiFetch } from "../lib/api";
 import type { Service, User } from "../lib/types";
+import { addBangkokDays } from "../lib/datetime";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import {
@@ -70,8 +71,11 @@ export function OrdersPage() {
   });
 
   const usersQuery = useQuery({
-    queryKey: ["users"],
-    queryFn: () => apiFetch<User[]>("/api/users"),
+    queryKey: ["users", "all"],
+    queryFn: () =>
+      apiFetch<{ data: User[] }>("/api/users", {
+        query: { all: "true" },
+      }),
   });
 
   const serviceMap = useMemo(() => {
@@ -92,7 +96,7 @@ export function OrdersPage() {
 
   const userOptions = useMemo(
     () =>
-      (usersQuery.data ?? []).map((user) =>
+      (usersQuery.data?.data ?? []).map((user) =>
         `${user.id} | ${user.username ?? "-"} | ${user.platform_user_id}`.trim(),
       ),
     [usersQuery.data],
@@ -323,7 +327,7 @@ export function OrdersPage() {
                         })
                       }
                     />
-                    Wait approve
+                    Wait previous
                   </label>
                 </div>
                 <div className="grid gap-3 md:grid-cols-3">
@@ -545,8 +549,7 @@ function buildCustomerMessage(input: {
   target: number;
   safety: number;
 }) {
-  const expire = new Date();
-  expire.setDate(expire.getDate() + 30);
+  const expire = addBangkokDays(30);
   const formatter = new Intl.DateTimeFormat("th-TH", {
     day: "numeric",
     month: "long",

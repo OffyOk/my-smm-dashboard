@@ -6,13 +6,18 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import type { ColumnDef } from "@tanstack/react-table";
-import { RefreshCw } from "lucide-react";
+import { Copy, RefreshCw } from "lucide-react";
 import type { Order, OrdersResponse, OrderStatus } from "../../lib/types";
 import { apiFetch } from "../../lib/api";
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { useToast } from "../../components/toast";
+import {
+  formatBangkokDateTime,
+  getBangkokISODate,
+  parseBangkokDate,
+} from "../../lib/datetime";
 import {
   Dialog,
   DialogContent,
@@ -58,22 +63,12 @@ function statusVariant(status: OrderStatus) {
   }
 }
 
-const bangkokFormatter = new Intl.DateTimeFormat("th-TH", {
-  dateStyle: "medium",
-  timeStyle: "short",
-  timeZone: "Asia/Bangkok",
-});
-
-function formatBangkok(value: string) {
-  return bangkokFormatter.format(new Date(value));
-}
-
 function isRefillRemark(remark?: string | null) {
   return !!remark && /refill|refil/i.test(remark);
 }
 
 function isOlderThan30Days(createdAt: string) {
-  const created = new Date(createdAt).getTime();
+  const created = parseBangkokDate(createdAt).getTime();
   return Date.now() - created > 30 * 24 * 60 * 60 * 1000;
 }
 
@@ -173,6 +168,7 @@ export function OrdersTable() {
       old_order_id: number;
       new_service_id: number;
       new_start_count: number;
+      user_id: number;
       link: string;
       qty: number;
     }) =>
@@ -238,7 +234,7 @@ export function OrdersTable() {
         accessorKey: "created_at",
         cell: ({ row }) => (
           <span className="text-xs text-slate-400 light:text-slate-600">
-            {formatBangkok(row.original.created_at)}
+            {formatBangkokDateTime(row.original.created_at)}
           </span>
         ),
       },
@@ -247,6 +243,59 @@ export function OrdersTable() {
         accessorKey: "service_name",
         cell: ({ row }) => (
           <span className="font-medium">{row.original.service_name}</span>
+        ),
+      },
+      {
+        header: "User Name",
+        accessorKey: "user_name",
+        cell: ({ row }) => (
+          <span className="font-medium">{row.original.user_name}</span>
+        ),
+      },
+      {
+        header: "Link",
+        accessorKey: "link",
+        maxSize: 100,
+        cell: ({ row }) => (
+          <div className="flex items-center gap-2">
+            <a
+              href={row.original.link}
+              target="_blank"
+              rel="noreferrer"
+              className="block max-w-[200px] truncate text-sky-400 hover:text-sky-300"
+            >
+              {row.original.link}
+            </a>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 shrink-0"
+              onClick={() => {
+                navigator.clipboard.writeText(row.original.link);
+                push({
+                  title: "Copied",
+                  description: "Link copied to clipboard",
+                  variant: "success",
+                });
+              }}
+            >
+              <Copy className="h-3 w-3" />
+            </Button>
+          </div>
+        ),
+      },
+      {
+        header: "Qty",
+        accessorKey: "quantity",
+        cell: ({ row }) => (
+          <span className="font-mono">{row.original.quantity}</span>
+        ),
+      },
+      {
+        header: "Start Cnt",
+        accessorKey: "start_count",
+        cell: ({ row }) => (
+          <span className="font-mono">{row.original.start_count ?? "-"}</span>
         ),
       },
       {
@@ -259,28 +308,6 @@ export function OrdersTable() {
         ),
       },
       {
-        header: "Link",
-        accessorKey: "link",
-        maxSize: 100,
-        cell: ({ row }) => (
-          <a
-            href={row.original.link}
-            target="_blank"
-            rel="noreferrer"
-            className="block max-w-[200px] truncate text-sky-400 hover:text-sky-300"
-          >
-            {row.original.link}
-          </a>
-        ),
-      },
-      {
-        header: "Qty",
-        accessorKey: "quantity",
-        cell: ({ row }) => (
-          <span className="font-mono">{row.original.quantity}</span>
-        ),
-      },
-      {
         header: "Status",
         accessorKey: "status",
         cell: ({ row }) => (
@@ -289,15 +316,15 @@ export function OrdersTable() {
           </Badge>
         ),
       },
-      {
-        header: "Provider",
-        accessorKey: "provider_code",
-        cell: ({ row }) => (
-          <span className="font-mono text-xs text-slate-400 light:text-slate-600">
-            {row.original.provider_code ?? "-"}
-          </span>
-        ),
-      },
+      // {
+      //   header: "Provider",
+      //   accessorKey: "provider_code",
+      //   cell: ({ row }) => (
+      //     <span className="font-mono text-xs text-slate-400 light:text-slate-600">
+      //       {row.original.provider_code ?? "-"}
+      //     </span>
+      //   ),
+      // },
 
       {
         id: "actions",
@@ -341,7 +368,7 @@ export function OrdersTable() {
         },
       },
     ],
-    [],
+    [push],
   );
 
   // eslint-disable-next-line react-hooks/incompatible-library
@@ -424,8 +451,7 @@ export function OrdersTable() {
             size="sm"
             variant="outline"
             onClick={() => {
-              const today = new Date();
-              const iso = today.toISOString().slice(0, 10);
+              const iso = getBangkokISODate();
               setQuery((prev) => ({
                 ...prev,
                 page: 1,
@@ -440,14 +466,11 @@ export function OrdersTable() {
             size="sm"
             variant="outline"
             onClick={() => {
-              const end = new Date();
-              const start = new Date();
-              start.setDate(end.getDate() - 2);
               setQuery((prev) => ({
                 ...prev,
                 page: 1,
-                startDate: start.toISOString().slice(0, 10),
-                endDate: end.toISOString().slice(0, 10),
+                startDate: getBangkokISODate(-2),
+                endDate: getBangkokISODate(),
               }));
             }}
           >
@@ -457,14 +480,11 @@ export function OrdersTable() {
             size="sm"
             variant="outline"
             onClick={() => {
-              const end = new Date();
-              const start = new Date();
-              start.setDate(end.getDate() - 6);
               setQuery((prev) => ({
                 ...prev,
                 page: 1,
-                startDate: start.toISOString().slice(0, 10),
-                endDate: end.toISOString().slice(0, 10),
+                startDate: getBangkokISODate(-6),
+                endDate: getBangkokISODate(),
               }));
             }}
           >
@@ -530,7 +550,7 @@ export function OrdersTable() {
                     {order.service_name}
                   </p>
                   <p className="mt-1 text-xs text-slate-500">
-                    {formatBangkok(order.created_at)}
+                    {formatBangkokDateTime(order.created_at)}
                   </p>
                 </div>
                 <Badge variant={statusVariant(order.status)}>
@@ -583,7 +603,14 @@ export function OrdersTable() {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => navigator.clipboard.writeText(order.link)}
+                  onClick={() => {
+                    navigator.clipboard.writeText(order.link);
+                    push({
+                      title: "Copied",
+                      description: "Link copied to clipboard",
+                      variant: "success",
+                    });
+                  }}
                 >
                   Copy Link
                 </Button>
@@ -713,11 +740,17 @@ export function OrdersTable() {
           <DialogHeader>
             <DialogTitle>Refill Order</DialogTitle>
             <DialogDescription>
-              Confirm refill for order #{refillTarget?.id}. Start count:{" "}
-              {refillTarget?.start_count}. Quantity: {refillTarget?.quantity}.
-              Target count:{" "}
+              Confirm refill for order #{refillTarget?.id}. <br />
+              Start count: {refillTarget?.start_count}. Quantity:{" "}
+              {refillTarget?.quantity}. Target count:{" "}
               {(refillTarget?.start_count ?? 0) + (refillTarget?.quantity ?? 0)}
-              .
+              .<br />
+              Target Refill Count:{" "}
+              {(refillTarget?.start_count ?? 0) +
+                (refillTarget?.quantity ?? 0) -
+                ((refillTarget?.quantity ?? 0) * 0.1 > 100
+                  ? 100
+                  : (refillTarget?.quantity ?? 0) * 0.1)}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
@@ -738,6 +771,15 @@ export function OrdersTable() {
               Cancel
             </Button>
             <Button
+              disabled={
+                !refillCurrentCount ||
+                Number(refillCurrentCount) >
+                  (refillTarget?.start_count ?? 0) +
+                    (refillTarget?.quantity ?? 0) -
+                    ((refillTarget?.quantity ?? 0) * 0.1 > 100
+                      ? 100
+                      : (refillTarget?.quantity ?? 0) * 0.1)
+              }
               onClick={() => {
                 if (refillTarget) {
                   refillMutation.mutate({
@@ -819,6 +861,7 @@ export function OrdersTable() {
                     old_order_id: resubmitTarget.id,
                     new_service_id: Number(newServiceId),
                     new_start_count: Number(newStartCount),
+                    user_id: resubmitTarget.user_id,
                     link: resubmitTarget.link,
                     qty: resubmitTarget.quantity,
                   });

@@ -3,6 +3,8 @@
 export type Order = {
   id: number;
   created_at: string;
+  user_id: number;
+  user_name: string | null;
   service_name: string;
   link: string;
   quantity: number;
@@ -81,4 +83,11 @@ export type User = {
   balance: number;
   total_spent: number;
   created_at?: string;
+};
+
+export type UsersResponse = {
+  data: User[];
+  page: number;
+  pageSize: number;
+  total: number;
 };

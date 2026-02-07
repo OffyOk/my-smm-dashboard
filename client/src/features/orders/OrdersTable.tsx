@@ -785,7 +785,7 @@ export function OrdersTable() {
             <Button
               disabled={
                 !refillCurrentCount ||
-                Number(refillCurrentCount) <
+                Number(refillCurrentCount) >
                   (refillTarget?.start_count ?? 0) +
                     (refillTarget?.quantity ?? 0) -
                     ((refillTarget?.quantity ?? 0) * 0.1 > 100

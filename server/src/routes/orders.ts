@@ -143,8 +143,8 @@ ordersRoutes.post("/:id/refill", zValidator("json", refillSchema), async (c) => 
 const resubmitSchema = z.object({
   old_order_id: z.number(),
   new_service_id: z.number(),
+  new_start_count: z.number(),
   user_id: z.number().optional(),
-  custom_price: z.number(),
   link: z.string().url(),
   qty: z.number().min(1),
 });
@@ -165,6 +165,7 @@ ordersRoutes.post("/resubmit", zValidator("json", resubmitSchema), async (c) => 
           service_id: payload.new_service_id,
           link: payload.link,
           user_id: payload.user_id,
+          start_count: payload.new_start_count,
           quantity: payload.qty,
           custom_price: 0,
           remark: `Resubmit from order #${payload.old_order_id}`,

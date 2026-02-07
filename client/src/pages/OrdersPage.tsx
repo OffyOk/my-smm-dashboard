@@ -93,7 +93,7 @@ export function OrdersPage() {
   const userOptions = useMemo(
     () =>
       (usersQuery.data ?? []).map((user) =>
-        `${user.id} | ${user.username ?? "-"} | ${user.platform_user_id}`.trim()
+        `${user.id} | ${user.username ?? "-"} | ${user.platform_user_id}`.trim(),
       ),
     [usersQuery.data],
   );
@@ -168,7 +168,7 @@ export function OrdersPage() {
     createOrders.mutate({
       orders: cleaned.map((d) => ({
         ...d,
-        user_id: d.user_id === "" ? undefined : Number(d.user_id),
+        user_id: d.user_id === "" ? "" : Number(d.user_id),
         service_id: Number(d.service_id),
         quantity: Number(d.quantity),
         start_count: d.start_count === "" ? 0 : Number(d.start_count),
@@ -323,7 +323,7 @@ export function OrdersPage() {
                         })
                       }
                     />
-                    Wait approve
+                    Wait previous
                   </label>
                 </div>
                 <div className="grid gap-3 md:grid-cols-3">

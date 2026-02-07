@@ -6,7 +6,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import type { ColumnDef } from "@tanstack/react-table";
-import { RefreshCw } from "lucide-react";
+import { Copy, RefreshCw } from "lucide-react";
 import type { Order, OrdersResponse, OrderStatus } from "../../lib/types";
 import { apiFetch } from "../../lib/api";
 import { Badge } from "../../components/ui/badge";
@@ -250,27 +250,35 @@ export function OrdersTable() {
         ),
       },
       {
-        header: "Remark",
-        accessorKey: "remark",
-        cell: ({ row }) => (
-          <span className="font-mono text-xs text-slate-400 light:text-slate-600">
-            {row.original.remark ?? "-"}
-          </span>
-        ),
-      },
-      {
         header: "Link",
         accessorKey: "link",
         maxSize: 100,
         cell: ({ row }) => (
-          <a
-            href={row.original.link}
-            target="_blank"
-            rel="noreferrer"
-            className="block max-w-[200px] truncate text-sky-400 hover:text-sky-300"
-          >
-            {row.original.link}
-          </a>
+          <div className="flex items-center gap-2">
+            <a
+              href={row.original.link}
+              target="_blank"
+              rel="noreferrer"
+              className="block max-w-[200px] truncate text-sky-400 hover:text-sky-300"
+            >
+              {row.original.link}
+            </a>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 shrink-0"
+              onClick={() => {
+                navigator.clipboard.writeText(row.original.link);
+                push({
+                  title: "Copied",
+                  description: "Link copied to clipboard",
+                  variant: "success",
+                });
+              }}
+            >
+              <Copy className="h-3 w-3" />
+            </Button>
+          </div>
         ),
       },
       {
@@ -278,6 +286,22 @@ export function OrdersTable() {
         accessorKey: "quantity",
         cell: ({ row }) => (
           <span className="font-mono">{row.original.quantity}</span>
+        ),
+      },
+      {
+        header: "Start Cnt",
+        accessorKey: "start_count",
+        cell: ({ row }) => (
+          <span className="font-mono">{row.original.start_count ?? "-"}</span>
+        ),
+      },
+      {
+        header: "Remark",
+        accessorKey: "remark",
+        cell: ({ row }) => (
+          <span className="font-mono text-xs text-slate-400 light:text-slate-600">
+            {row.original.remark ?? "-"}
+          </span>
         ),
       },
       {
@@ -289,15 +313,15 @@ export function OrdersTable() {
           </Badge>
         ),
       },
-      {
-        header: "Provider",
-        accessorKey: "provider_code",
-        cell: ({ row }) => (
-          <span className="font-mono text-xs text-slate-400 light:text-slate-600">
-            {row.original.provider_code ?? "-"}
-          </span>
-        ),
-      },
+      // {
+      //   header: "Provider",
+      //   accessorKey: "provider_code",
+      //   cell: ({ row }) => (
+      //     <span className="font-mono text-xs text-slate-400 light:text-slate-600">
+      //       {row.original.provider_code ?? "-"}
+      //     </span>
+      //   ),
+      // },
 
       {
         id: "actions",
@@ -341,7 +365,7 @@ export function OrdersTable() {
         },
       },
     ],
-    [],
+    [push],
   );
 
   // eslint-disable-next-line react-hooks/incompatible-library
@@ -583,7 +607,14 @@ export function OrdersTable() {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => navigator.clipboard.writeText(order.link)}
+                  onClick={() => {
+                    navigator.clipboard.writeText(order.link);
+                    push({
+                      title: "Copied",
+                      description: "Link copied to clipboard",
+                      variant: "success",
+                    });
+                  }}
                 >
                   Copy Link
                 </Button>
@@ -713,11 +744,17 @@ export function OrdersTable() {
           <DialogHeader>
             <DialogTitle>Refill Order</DialogTitle>
             <DialogDescription>
-              Confirm refill for order #{refillTarget?.id}. Start count:{" "}
-              {refillTarget?.start_count}. Quantity: {refillTarget?.quantity}.
-              Target count:{" "}
+              Confirm refill for order #{refillTarget?.id}. <br />
+              Start count: {refillTarget?.start_count}. Quantity:{" "}
+              {refillTarget?.quantity}. Target count:{" "}
               {(refillTarget?.start_count ?? 0) + (refillTarget?.quantity ?? 0)}
-              .
+              .<br />
+              Target Refill Count:{" "}
+              {(refillTarget?.start_count ?? 0) +
+                (refillTarget?.quantity ?? 0) -
+                ((refillTarget?.quantity ?? 0) * 0.1 > 100
+                  ? 100
+                  : (refillTarget?.quantity ?? 0) * 0.1)}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
@@ -738,6 +775,15 @@ export function OrdersTable() {
               Cancel
             </Button>
             <Button
+              disabled={
+                !refillCurrentCount ||
+                Number(refillCurrentCount) <
+                  (refillTarget?.start_count ?? 0) +
+                    (refillTarget?.quantity ?? 0) -
+                    ((refillTarget?.quantity ?? 0) * 0.1 > 100
+                      ? 100
+                      : (refillTarget?.quantity ?? 0) * 0.1)
+              }
               onClick={() => {
                 if (refillTarget) {
                   refillMutation.mutate({

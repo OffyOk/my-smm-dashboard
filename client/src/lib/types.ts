@@ -3,6 +3,8 @@
 export type Order = {
   id: number;
   created_at: string;
+  user_id: number;
+  user_name: string | null;
   service_name: string;
   link: string;
   quantity: number;

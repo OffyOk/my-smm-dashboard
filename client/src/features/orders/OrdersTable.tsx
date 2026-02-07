@@ -173,6 +173,7 @@ export function OrdersTable() {
       old_order_id: number;
       new_service_id: number;
       new_start_count: number;
+      user_id: number;
       link: string;
       qty: number;
     }) =>
@@ -247,6 +248,13 @@ export function OrdersTable() {
         accessorKey: "service_name",
         cell: ({ row }) => (
           <span className="font-medium">{row.original.service_name}</span>
+        ),
+      },
+      {
+        header: "User Name",
+        accessorKey: "user_name",
+        cell: ({ row }) => (
+          <span className="font-medium">{row.original.user_name}</span>
         ),
       },
       {
@@ -865,6 +873,7 @@ export function OrdersTable() {
                     old_order_id: resubmitTarget.id,
                     new_service_id: Number(newServiceId),
                     new_start_count: Number(newStartCount),
+                    user_id: resubmitTarget.user_id,
                     link: resubmitTarget.link,
                     qty: resubmitTarget.quantity,
                   });

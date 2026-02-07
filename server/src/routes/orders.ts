@@ -3,7 +3,7 @@ import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
 import { and, desc, eq, gte, ilike, lte, or, sql } from "drizzle-orm";
 import { db } from "../db";
-import { orders, providers, services } from "../db/schema";
+import { orders, providers, services, users } from "../db/schema";
 
 export const ordersRoutes = new Hono();
 
@@ -60,11 +60,14 @@ ordersRoutes.get("/", zValidator("query", listQuerySchema), async (c) => {
       provider_order_id: orders.providerOrderId,
       start_count: orders.startCount,
       remark: orders.remark,
+      user_id: orders.userId,
+      user_name: users.username,
       service_name: services.name,
       provider_code: providers.code,
     })
     .from(orders)
     .leftJoin(services, eq(orders.serviceId, services.id))
+    .leftJoin(users, eq(orders.userId, users.id))
     .leftJoin(providers, eq(services.providerCode, providers.code))
     .where(whereClause)
     .orderBy(desc(orders.createdAt))
@@ -140,6 +143,8 @@ ordersRoutes.post("/:id/refill", zValidator("json", refillSchema), async (c) => 
 const resubmitSchema = z.object({
   old_order_id: z.number(),
   new_service_id: z.number(),
+  user_id: z.number().optional(),
+  custom_price: z.number(),
   link: z.string().url(),
   qty: z.number().min(1),
 });
@@ -159,7 +164,9 @@ ordersRoutes.post("/resubmit", zValidator("json", resubmitSchema), async (c) => 
         {
           service_id: payload.new_service_id,
           link: payload.link,
+          user_id: payload.user_id,
           quantity: payload.qty,
+          custom_price: 0,
           remark: `Resubmit from order #${payload.old_order_id}`,
         },
       ],

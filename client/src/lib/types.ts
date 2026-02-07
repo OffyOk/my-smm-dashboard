@@ -84,3 +84,10 @@ export type User = {
   total_spent: number;
   created_at?: string;
 };
+
+export type UsersResponse = {
+  data: User[];
+  page: number;
+  pageSize: number;
+  total: number;
+};

@@ -70,8 +70,11 @@ export function OrdersPage() {
   });
 
   const usersQuery = useQuery({
-    queryKey: ["users"],
-    queryFn: () => apiFetch<User[]>("/api/users"),
+    queryKey: ["users", "all"],
+    queryFn: () =>
+      apiFetch<{ data: User[] }>("/api/users", {
+        query: { all: "true" },
+      }),
   });
 
   const serviceMap = useMemo(() => {
@@ -92,7 +95,7 @@ export function OrdersPage() {
 
   const userOptions = useMemo(
     () =>
-      (usersQuery.data ?? []).map((user) =>
+      (usersQuery.data?.data ?? []).map((user) =>
         `${user.id} | ${user.username ?? "-"} | ${user.platform_user_id}`.trim(),
       ),
     [usersQuery.data],

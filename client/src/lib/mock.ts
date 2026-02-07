@@ -7,6 +7,8 @@ import type {
   Provider,
   OrderStatus,
   OverviewStats,
+  User,
+  UsersResponse,
 } from "./types";
 
 type OrdersQuery = {
@@ -21,6 +23,8 @@ const mockOrders: Order[] = Array.from({ length: 64 }).map((_, index) => {
   const status = statusPool[index % statusPool.length];
   return {
     id: 4200 + index,
+    user_id: 300 + (index % 10),
+    user_name: ["somchai", "suda", "narin", "may", "beam"][index % 5],
     created_at: new Date(Date.now() - index * 60 * 60 * 1000).toISOString(),
     service_name: [
       "Instagram Followers - HQ",
@@ -219,5 +223,64 @@ export function getMockUsers() {
       balance: 40.0,
       total_spent: 250.0,
     },
+    {
+      id: 3,
+      platform_user_id: "ig_003",
+      username: "narin",
+      balance: 12.25,
+      total_spent: 110.0,
+    },
+    {
+      id: 4,
+      platform_user_id: "tt_004",
+      username: "may",
+      balance: 300.0,
+      total_spent: 1480.5,
+    },
+    {
+      id: 5,
+      platform_user_id: "fb_005",
+      username: "beam",
+      balance: 0,
+      total_spent: 55.25,
+    },
   ];
+}
+
+type UsersQuery = {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  all?: boolean;
+};
+
+export function getMockUsersResponse(query: UsersQuery): UsersResponse {
+  const page = query.page ?? 1;
+  const pageSize = query.pageSize ?? 20;
+  const search = query.search?.toLowerCase() ?? "";
+  const all = query.all ?? false;
+
+  const data = getMockUsers() as User[];
+  const filtered = data.filter((user) => {
+    if (!search) return true;
+    return (
+      user.id.toString().includes(search) ||
+      user.platform_user_id.toLowerCase().includes(search) ||
+      (user.username ?? "").toLowerCase().includes(search)
+    );
+  });
+
+  const total = filtered.length;
+  if (all) {
+    return { data: filtered, page: 1, pageSize: total, total };
+  }
+
+  const start = (page - 1) * pageSize;
+  const end = start + pageSize;
+  return {
+    data: filtered.slice(start, end),
+    page,
+    pageSize,
+    total,
+  };
 }

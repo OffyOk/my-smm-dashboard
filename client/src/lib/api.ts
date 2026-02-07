@@ -5,7 +5,6 @@ import {
   getMockServices,
   getMockSummary,
   getMockOverview,
-  getMockUsers,
   getMockUsersResponse,
 } from "./mock";
 import { clearAuthToken, getAuthToken } from "./auth";

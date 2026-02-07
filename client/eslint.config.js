@@ -24,4 +24,12 @@ export default defineConfig([
       },
     },
   },
+  {
+    files: ['vite.config.ts', 'tailwind.config.ts'],
+    languageOptions: {
+      parserOptions: {
+        project: null,
+      },
+    },
+  },
 ])

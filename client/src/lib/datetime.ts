@@ -8,7 +8,7 @@ const bangkokDateTimeFormatter = new Intl.DateTimeFormat("th-TH", {
 
 function parseAssumeUtc(value: string) {
   const trimmed = value.trim();
-  if (/[zZ]|[+\-]\d{2}:?\d{2}$/.test(trimmed)) {
+  if (/[zZ]|[+-]\d{2}:?\d{2}$/.test(trimmed)) {
     return new Date(trimmed);
   }
   const normalized = trimmed.includes("T")

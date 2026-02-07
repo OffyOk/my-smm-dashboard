@@ -4,6 +4,7 @@ import { X } from "lucide-react";
 import { OrdersTable } from "../features/orders/OrdersTable";
 import { apiFetch } from "../lib/api";
 import type { Service, User } from "../lib/types";
+import { addBangkokDays } from "../lib/datetime";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import {
@@ -548,8 +549,7 @@ function buildCustomerMessage(input: {
   target: number;
   safety: number;
 }) {
-  const expire = new Date();
-  expire.setDate(expire.getDate() + 30);
+  const expire = addBangkokDays(30);
   const formatter = new Intl.DateTimeFormat("th-TH", {
     day: "numeric",
     month: "long",

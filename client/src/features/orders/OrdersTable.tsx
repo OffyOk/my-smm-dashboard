@@ -14,6 +14,11 @@ import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { useToast } from "../../components/toast";
 import {
+  formatBangkokDateTime,
+  getBangkokISODate,
+  parseBangkokDate,
+} from "../../lib/datetime";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -58,22 +63,12 @@ function statusVariant(status: OrderStatus) {
   }
 }
 
-const bangkokFormatter = new Intl.DateTimeFormat("th-TH", {
-  dateStyle: "medium",
-  timeStyle: "short",
-  timeZone: "Asia/Bangkok",
-});
-
-function formatBangkok(value: string) {
-  return bangkokFormatter.format(new Date(value));
-}
-
 function isRefillRemark(remark?: string | null) {
   return !!remark && /refill|refil/i.test(remark);
 }
 
 function isOlderThan30Days(createdAt: string) {
-  const created = new Date(createdAt).getTime();
+  const created = parseBangkokDate(createdAt).getTime();
   return Date.now() - created > 30 * 24 * 60 * 60 * 1000;
 }
 
@@ -239,7 +234,7 @@ export function OrdersTable() {
         accessorKey: "created_at",
         cell: ({ row }) => (
           <span className="text-xs text-slate-400 light:text-slate-600">
-            {formatBangkok(row.original.created_at)}
+            {formatBangkokDateTime(row.original.created_at)}
           </span>
         ),
       },
@@ -456,8 +451,7 @@ export function OrdersTable() {
             size="sm"
             variant="outline"
             onClick={() => {
-              const today = new Date();
-              const iso = today.toISOString().slice(0, 10);
+              const iso = getBangkokISODate();
               setQuery((prev) => ({
                 ...prev,
                 page: 1,
@@ -472,14 +466,11 @@ export function OrdersTable() {
             size="sm"
             variant="outline"
             onClick={() => {
-              const end = new Date();
-              const start = new Date();
-              start.setDate(end.getDate() - 2);
               setQuery((prev) => ({
                 ...prev,
                 page: 1,
-                startDate: start.toISOString().slice(0, 10),
-                endDate: end.toISOString().slice(0, 10),
+                startDate: getBangkokISODate(-2),
+                endDate: getBangkokISODate(),
               }));
             }}
           >
@@ -489,14 +480,11 @@ export function OrdersTable() {
             size="sm"
             variant="outline"
             onClick={() => {
-              const end = new Date();
-              const start = new Date();
-              start.setDate(end.getDate() - 6);
               setQuery((prev) => ({
                 ...prev,
                 page: 1,
-                startDate: start.toISOString().slice(0, 10),
-                endDate: end.toISOString().slice(0, 10),
+                startDate: getBangkokISODate(-6),
+                endDate: getBangkokISODate(),
               }));
             }}
           >
@@ -562,7 +550,7 @@ export function OrdersTable() {
                     {order.service_name}
                   </p>
                   <p className="mt-1 text-xs text-slate-500">
-                    {formatBangkok(order.created_at)}
+                    {formatBangkokDateTime(order.created_at)}
                   </p>
                 </div>
                 <Badge variant={statusVariant(order.status)}>

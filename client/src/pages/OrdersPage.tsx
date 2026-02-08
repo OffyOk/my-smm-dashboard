@@ -4,7 +4,6 @@ import { X } from "lucide-react";
 import { OrdersTable } from "../features/orders/OrdersTable";
 import { apiFetch } from "../lib/api";
 import type { Service, User } from "../lib/types";
-import { addBangkokDays } from "../lib/datetime";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import {
@@ -17,8 +16,6 @@ import {
 } from "../components/ui/dialog";
 
 type NewOrderDraft = {
-  user_id: number | "";
-  user_pick: string;
   service_id: number | "";
   service_pick: string;
   link: string;
@@ -30,7 +27,6 @@ type NewOrderDraft = {
 };
 
 type ConfirmationItem = {
-  orderId?: number;
   message: string;
 };
 
@@ -40,8 +36,6 @@ type RefillDraft = {
 };
 
 const emptyDraft: NewOrderDraft = {
-  user_id: "",
-  user_pick: "",
   service_id: "",
   service_pick: "",
   link: "",
@@ -64,6 +58,8 @@ export function OrdersPage() {
   const [drafts, setDrafts] = useState<NewOrderDraft[]>([{ ...emptyDraft }]);
   const [refillOpen, setRefillOpen] = useState(false);
   const [refills, setRefills] = useState<RefillDraft[]>([{ ...emptyRefill }]);
+  const [bulkUserPick, setBulkUserPick] = useState("");
+  const [bulkUserId, setBulkUserId] = useState<number | "">("");
 
   const servicesQuery = useQuery({
     queryKey: ["services"],
@@ -97,13 +93,15 @@ export function OrdersPage() {
   const userOptions = useMemo(
     () =>
       (usersQuery.data?.data ?? []).map((user) =>
-        `${user.id} | ${user.username ?? "-"} | ${user.platform_user_id}`.trim(),
+        `${user.id} | ${user.username ?? "-"} | ${user.balance.toFixed(2)}`.trim(),
       ),
     [usersQuery.data],
   );
 
   const createOrders = useMutation({
-    mutationFn: (payload: { orders: NewOrderDraft[] }) =>
+    mutationFn: (payload: {
+      orders: Array<NewOrderDraft & { user_id?: number }>;
+    }) =>
       apiFetch<
         { created_ids?: Array<number> } | Array<{ created_ids?: Array<number> }>
       >("/api/orders/bulk", {
@@ -114,26 +112,30 @@ export function OrdersPage() {
       const raw = Array.isArray(result) ? result[0] : result;
       const createdIds = raw?.created_ids ?? [];
       const cleanOrders = variables.orders;
-      const messages = cleanOrders.map((order, index) => {
+      const blocks = cleanOrders.map((order, index) => {
         const orderId = createdIds[index];
         const serviceName =
           serviceMap.get(Number(order.service_id)) ?? String(order.service_id);
         const startCount = Number(order.start_count ?? 0);
         const quantity = Number(order.quantity ?? 0);
         const target = startCount + quantity;
-        const safety = target - Math.min(quantity * 0.1, 100);
-        const message = buildCustomerMessage({
+        return buildOrderBlock({
           orderId,
           serviceName,
           link: order.link,
           startCount,
           quantity,
           target,
-          safety,
         });
-        return { orderId, message };
       });
-      setConfirmations(messages);
+      const safetyList = cleanOrders.map((order) => {
+        const startCount = Number(order.start_count ?? 0);
+        const quantity = Number(order.quantity ?? 0);
+        const target = startCount + quantity;
+        return String(target - Math.min(quantity * 0.1, 100));
+      });
+      const message = buildBulkCustomerMessage(blocks, safetyList);
+      setConfirmations([{ message }]);
       setConfirmOpen(true);
     },
   });
@@ -172,7 +174,7 @@ export function OrdersPage() {
     createOrders.mutate({
       orders: cleaned.map((d) => ({
         ...d,
-        user_id: d.user_id === "" ? "" : Number(d.user_id),
+        user_id: bulkUserId === "" ? undefined : Number(bulkUserId),
         service_id: Number(d.service_id),
         quantity: Number(d.quantity),
         start_count: d.start_count === "" ? 0 : Number(d.start_count),
@@ -185,6 +187,8 @@ export function OrdersPage() {
     });
     setDialogOpen(false);
     setDrafts([{ ...emptyDraft }]);
+    setBulkUserId("");
+    setBulkUserPick("");
   }
 
   function updateRefill(index: number, patch: Partial<RefillDraft>) {
@@ -273,6 +277,30 @@ export function OrdersPage() {
           </DialogHeader>
 
           <div className="space-y-4">
+            <div className="grid gap-3 md:grid-cols-[1.5fr_auto]">
+              <Input
+                placeholder="User (type to search)"
+                list="user-list"
+                value={bulkUserPick}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  const id = Number(value.split("|")[0]?.trim());
+                  setBulkUserPick(value);
+                  setBulkUserId(Number.isNaN(id) ? "" : id);
+                }}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setBulkUserPick("");
+                  setBulkUserId("");
+                }}
+              >
+                Clear User
+              </Button>
+            </div>
+
             {drafts.map((draft, index) => (
               <div
                 key={index}
@@ -313,6 +341,10 @@ export function OrdersPage() {
                     }
                     onBlur={(event) => {
                       const value = event.target.value.trim();
+                      if (value.includes("facebook")) {
+                        updateDraft(index, { link: value });
+                        return;
+                      }
                       const cleaned = value.split("?")[0];
                       updateDraft(index, { link: cleaned });
                     }}
@@ -327,7 +359,7 @@ export function OrdersPage() {
                         })
                       }
                     />
-                    Wait previous
+                    Wait approve
                   </label>
                 </div>
                 <div className="grid gap-3 md:grid-cols-3">
@@ -370,19 +402,6 @@ export function OrdersPage() {
                   />
                 </div>
                 <div className="grid gap-3 md:grid-cols-2">
-                  <Input
-                    placeholder="User (type to search)"
-                    list="user-list"
-                    value={draft.user_pick}
-                    onChange={(event) => {
-                      const value = event.target.value;
-                      const id = Number(value.split("|")[0]?.trim());
-                      updateDraft(index, {
-                        user_pick: value,
-                        user_id: Number.isNaN(id) ? "" : id,
-                      });
-                    }}
-                  />
                   <Input
                     placeholder="Remark"
                     value={draft.remark}
@@ -445,7 +464,7 @@ export function OrdersPage() {
                 <textarea
                   value={item.message}
                   readOnly
-                  className="min-h-[220px] w-full rounded-md border border-slate-800/60 bg-slate-950/60 p-3 text-sm text-slate-100 light:border-slate-200 light:bg-white light:text-slate-900"
+                  className="min-h-[260px] w-full rounded-md border border-slate-800/60 bg-slate-950/60 p-3 text-sm text-slate-100 light:border-slate-200 light:bg-white light:text-slate-900"
                 />
                 <Button
                   variant="outline"
@@ -540,21 +559,25 @@ export function OrdersPage() {
   );
 }
 
-function buildCustomerMessage(input: {
+function buildOrderBlock(input: {
   orderId?: number;
   serviceName: string;
   link: string;
   startCount: number;
   quantity: number;
   target: number;
-  safety: number;
 }) {
-  const expire = addBangkokDays(30);
+  return `เลขออเดอร์: ${input.orderId ?? "-"}\nบริการ: ${input.serviceName}\nลิงก์: ${input.link}\nยอดเริ่มต้น: ${input.startCount}\nยอดสั่งซื้อ: ${input.quantity}\nยอดที่ต้องได้: ${input.target}`;
+}
+
+function buildBulkCustomerMessage(blocks: string[], safetyList: string[]) {
+  const expire = new Date();
+  expire.setDate(expire.getDate() + 30);
   const formatter = new Intl.DateTimeFormat("th-TH", {
     day: "numeric",
     month: "long",
     year: "numeric",
     timeZone: "Asia/Bangkok",
   });
-  return `ขอบคุณสำหรับคำสั่งซื้อค่ะ 💓\n\n📌 สรุปรายการสั่งซื้อ\nเลขออเดอร์: ${input.orderId ?? "-"}\nบริการ: ${input.serviceName}\nลิงก์: ${input.link}\nยอดเริ่มต้น: ${input.startCount}\nยอดสั่งซื้อ: ${input.quantity}\nยอดที่ต้องได้: ${input.target}\n\n⏰ ระยะเวลาดำเนินการ: 1-24 ชั่วโมง\nหากเกิน 24 ชั่วโมงแล้วยอดยังไม่เปลี่ยนแปลง สามารถติดต่อทางร้านได้เลยค่ะ\n\n⚠️ ข้อควรระวังระหว่างดำเนินการ\n- ห้ามเปลี่ยนชื่อแอคเคาท์\n- ห้ามล็อกแอคเคาท์เป็นส่วนตัว\n\n🛡️ การรับประกัน\nทางร้านรับประกัน 30 วัน (หมดอายุ: ${formatter.format(expire)})\nหากยอดลดลงต่ำกว่า ${input.safety} สามารถแจ้งขอรีฟิลได้ทันทีค่ะ\n\nขอบคุณที่ใช้บริการค่ะ 💖`;
+  return `ขอบคุณสำหรับคำสั่งซื้อค่ะ 💓\n\n📌 สรุปรายการสั่งซื้อ\n${blocks.join("\n\n")}\n\n⏰ ระยะเวลาดำเนินการ: 1-24 ชั่วโมง\nหากเกิน 24 ชั่วโมงแล้วยอดยังไม่เปลี่ยนแปลง สามารถติดต่อทางร้านได้เลยค่ะ\n\n⚠️ ข้อควรระวังระหว่างดำเนินการ\n- ห้ามเปลี่ยนชื่อแอคเคาท์\n- ห้ามล็อกแอคเคาท์เป็นส่วนตัว\n\n🛡️ การรับประกัน\nทางร้านรับประกัน 30 วัน (หมดอายุ: ${formatter.format(expire)})\nหากยอดลดลงต่ำกว่า ${safetyList.join(", ")} สามารถแจ้งขอรีฟิลได้ทันทีค่ะ\n\nขอบคุณที่ใช้บริการค่ะ 💖`;
 }
